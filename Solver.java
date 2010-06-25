@@ -52,6 +52,20 @@ class ListDomain {
     public boolean empty() {
     	return elems.isEmpty();
     }
+    
+    @Override
+    public String toString() {
+    	StringBuffer sb = new StringBuffer();
+    	
+    	sb.append("{ ");
+    	for (Integer i : elems) {
+    		sb.append(i.toString());
+    		sb.append(" ");
+    	}
+    	sb.append("}");
+    	
+    	return sb.toString();
+    }
 }
 
 /*
@@ -72,6 +86,11 @@ class Variable {
 	public String getName() {
 		return name;
 	}
+	
+	@Override
+	public String toString() {
+		return name + " = " + domain.toString();
+	}
 }
 
 class Pair {
@@ -81,6 +100,9 @@ class Pair {
 	}
 	public int x;
 	public int y;
+	public String toString() {
+		return "(" + x + "," + y + ")";
+	}
 }
 
 /*
@@ -133,7 +155,18 @@ class Problem {
     private Evaluator heuristic;
     private Evaluator objectiveFunction;
 
-    private int evalHeuristic() {
+    public Problem(Evaluator h, Evaluator of) {
+		heuristic = h;
+		objectiveFunction = of;
+		constraints = new ArrayList<BinaryConstraint>();
+		constraints_t = new ArrayList<BinaryConstraint>();
+	}
+
+	public void setVariables(List<Variable> vars) {
+		this.vars = vars;
+	}
+	
+	private int evalHeuristic() {
     	return heuristic.eval(vars);
     }
 
@@ -149,6 +182,85 @@ class Problem {
     	}
     	return true;
     }
+    
+    public void addConstraint(BinaryConstraint bc) {
+    	constraints.add(bc);
+    	constraints_t.add(bc.transpose());
+    }
+    
+    public void ac1() {
+    	boolean changed = true;
+    	while (changed) {
+    		changed = false;
+    		Iterator<BinaryConstraint> ic = constraints.iterator();
+    		Iterator<BinaryConstraint> ic_t = constraints_t.iterator();
+    		while (ic.hasNext()) {
+    			boolean a = ic.next().revise();
+    			boolean b = ic_t.next().revise();
+    			if (a || b) {
+    				changed = true;
+    			}
+    		}
+    	}
+    }
+    
+    @Override
+    public String toString() {
+    	StringBuffer sb = new StringBuffer();
+    	
+    	sb.append("#<Problem variables: ");
+    	for (Variable v : vars) {
+    		sb.append(v.toString());
+    		sb.append(", ");
+    	}
+    	sb.append("constraints: ");
+    	for (BinaryConstraint bc : constraints) {
+    		sb.append(bc.toString());
+    		sb.append(",");
+    	}
+    	sb.append(">");
+    	
+    	return sb.toString();
+    }
+}
+
+/*
+ * A randomly generated problem
+ */
+class RandomProblem extends Problem {
+	
+	private Random r = new Random();
+	
+	public RandomProblem(int nvars, int length, float density,
+			float strictness, Evaluator h, Evaluator of) {
+		super(h, of);
+		List<Integer> values = new ArrayList<Integer>();
+		for (int i = 0; i < length; ++i)
+			values.add(i);
+		ListDomain dom = new ListDomain(values);
+		List<Variable> vars = new ArrayList<Variable>();
+		for (int i = 0; i < nvars; ++i)
+			vars.add(new Variable((new Integer(i)).toString(), dom.copy()));
+		setVariables(vars);
+		for (Variable v1 : vars) {
+			for (Variable v2 : vars) {
+				if (r.nextFloat() <= density) {
+					// create constraint between v1 and v2
+					BinaryConstraint bc = new BinaryConstraint(v1, v2);
+					for (int a : dom.getElems()) {
+						for (int b : dom.getElems()) {
+							if (r.nextFloat() <= strictness) {
+								// accept pair
+								bc.add(new Pair(a, b));
+							}
+						}
+					}
+					addConstraint(bc);
+				}
+			}
+		}
+	}
+
 }
 
 /*
@@ -176,5 +288,8 @@ class MaxSum implements Problem.Evaluator {
 
 public class Solver {
     public static void main(String args[]) {
+    	Problem p = new RandomProblem(3, 3, 0.5f, 0.5f,
+    			new MaxSum(), new MaxSum());
+    	System.out.println(p);
     }
 }
