@@ -1,0 +1,92 @@
+\documentclass[a4paper,12pt,italian]{article}
+\usepackage[italian]{babel}
+\usepackage{longtable}
+\usepackage{graphicx}
+%\usepackage{lastpage}
+\usepackage{fancyhdr}
+
+\usepackage{setspace}
+%\onehalfspacing
+
+\pagestyle{fancy}
+\fancyhead{} %annulla head di default
+\fancyfoot{} %annulla foot di default
+
+\newcommand{\titolo}{Ottimizzazione di CSP con Branch and Bound}
+\newcommand{\autore}{Dissegna Stefano, Geremia Mirco}
+
+%testa e piede
+\lhead{\leftmark}
+%\rhead{}
+\cfoot{\thepage}%pagina \thepage\ di \pageref{LastPage}}
+
+\title{\titolo}
+\author{\autore}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+%\vspace*{1in}
+\includegraphics[scale=0.3]{unipd-logo.png} 
+
+\par
+\vspace{0.5in}
+{\Huge Universit\`a degli studi di Padova}
+\par
+\vspace{0.5in}
+{\LARGE Dipartimento di Matematica Pura ed Applicata}
+\par
+\vspace{0.3in}
+\par
+\vspace{0.5in}
+{\huge \titolo}
+\par
+\end{center}
+\vspace{0.5in}
+\begin{center}
+{\Large Studenti: \autore}
+\par
+\vspace{0.3in}
+\end{center}
+\par
+\vspace{0.5in}
+\begin{center}
+Anno Accademico 2009-2010
+\end{center}
+
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Scopo del progetto}
+
+Risoluzione di problemi di ottimizzazione espressi sotto forma di
+problema di vincoli binari con variabili con domini finiti. Le
+performance del risolutore sono state testate su problemi generati
+casualmente. Il risolutore \`e stato valutato con e senza la
+propagazione di vincoli utilizzando AC come criterio di consistenza
+locale.
+
+\section{Rappresentazione dei domini}
+
+\section{Rappresentazione delle variabili}
+
+\section{Rappresentazione dei vincoli}
+
+\section{Funzione obiettivo ed euristica}
+
+\section{Algoritmo di propagazione}
+
+\section{Ricerca}
+\subsection{Ripristinare i domini}
+\subsection{Scelta della variabile}
+\subsection{Scelta del valore}
+
+\section{Benchmark}
+
+\subsection{Al variare di ...}
+%% grafico + commento testuale
+
+\end{document}
