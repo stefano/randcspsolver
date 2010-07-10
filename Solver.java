@@ -1,4 +1,3 @@
-
 import java.util.*;
 
 /*
@@ -146,6 +145,31 @@ class Pair {
     public int x;
     public int y;
 
+    @Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + x;
+		result = prime * result + y;
+		return result;
+	}
+    
+    @Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Pair other = (Pair) obj;
+		if (x != other.x)
+			return false;
+		if (y != other.y)
+			return false;
+		return true;
+	}
+    
     public String toString() {
         return "(" + x + "," + y + ")";
     }
@@ -156,32 +180,40 @@ class Pair {
  * explicit representation through pairs
  * of accepted values (integers)
  */
-class BinaryConstraint extends HashSet<Pair> {
+class BinaryConstraint {
 
-    private static final long serialVersionUID = 1L;
+    private HashSet<Pair> pairs;
     private Variable a;
     private Variable b;
 
     public BinaryConstraint(Variable a, Variable b) {
-        super();
+        pairs = new HashSet<Pair>();
         this.a = a;
         this.b = b;
     }
 
+    public void add(Pair p) {
+    	pairs.add(p);
+    }
+    
     public BinaryConstraint transpose() {
         BinaryConstraint bc = new BinaryConstraint(b, a);
-        for (Pair p : bc) {
+        for (Pair p : pairs) {
             bc.add(new Pair(p.y, p.x));
         }
         return bc;
     }
 
     public boolean satisfied(int x, int y) {
-        return contains(new Pair(x, y));
+        return pairs.contains(new Pair(x, y));
     }
 
     public boolean revise() {
         return a.getDomain().removeInconsistent(b.getDomain(), this);
+    }
+    
+    public String toString() {
+    	return "#<constraint(" + a.getName() + "," + b.getName() + "):" + pairs.toString() + ">";
     }
 }
 
@@ -191,9 +223,9 @@ class BinaryConstraint extends HashSet<Pair> {
 class Problem {
 
     public interface Evaluator {
-
         int eval(List<Variable> vars);
     }
+    
     private List<Variable> vars;
     private List<BinaryConstraint> constraints;
     private List<BinaryConstraint> constraints_t;
@@ -207,6 +239,8 @@ class Problem {
         objectiveFunction = of;
         constraints = new ArrayList<BinaryConstraint>();
         constraints_t = new ArrayList<BinaryConstraint>();
+        sol = new ArrayList<Integer>();
+        bound = Integer.MIN_VALUE;
     }
 
     public void setVariables(List<Variable> vars) {
@@ -287,7 +321,7 @@ class Problem {
     public void setSol() {
         sol.clear();
         for (Variable v : vars) {
-            sol.add(v.getDomain().getMax());
+            sol.add(v.getDomain().getElems().get(0)); // in a solution, every domain is a singleton
         }
     }
 
@@ -317,52 +351,25 @@ class Problem {
         v.setDomain(dom_cp); // restore the domain
     }
 
-
-@Override
-    public String
-
-toString() {
+   @Override
+    public String toString() {
         StringBuffer sb = new StringBuffer();
-
-        sb.
-
-append("#<Problem variables: ");
-
-
-for (Variable v : vars) {
+        sb.append("Solution: " + sol.toString());
+        sb.append("#<Problem variables: ");
+        for (Variable v : vars) {
             sb.append(v.toString());
-            sb.
+            sb.append(", ");
+        }
+        sb.append("\nconstraints: ");
 
-append(", ");
-
-
-}
-        sb.append("constraints: ");
-
-
-for (BinaryConstraint bc : constraints) {
+        for (BinaryConstraint bc : constraints) {
             sb.append(bc.toString());
-            sb.
-
-append(",");
-
-
-}
+            sb.append("\n");
+        }
         sb.append(">");
 
-
-
-return sb.toString();
-
-
-
-
-
-
-
-
-
-            }
+        return sb.toString();
+    }
 }
 
 /*
@@ -385,11 +392,11 @@ class RandomProblem extends Problem {
             vars.add(new Variable((new Integer(i)).toString(), dom.copy()));
         }
         setVariables(vars);
-        for (Variable v1 : vars) {
-            for (Variable v2 : vars) {
+        for (int i = 0; i < vars.size(); ++i) {
+            for (int j = i+1; j < vars.size(); ++j) {
                 if (r.nextFloat() <= density) {
                     // create constraint between v1 and v2
-                    BinaryConstraint bc = new BinaryConstraint(v1, v2);
+                    BinaryConstraint bc = new BinaryConstraint(vars.get(i), vars.get(j));
                     for (int a : dom.getElems()) {
                         for (int b : dom.getElems()) {
                             if (r.nextFloat() <= strictness) {
