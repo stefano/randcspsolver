@@ -12,6 +12,8 @@ class ListDomain {
         elems = l;
     }
 
+    // create a singleton domain
+    // i.e. a domain with just one value
     public ListDomain(int val) {
         elems = new ArrayList<Integer>();
         elems.add(val);
@@ -330,13 +332,25 @@ class Problem {
      */
     public void bb(int lev) { 
         Variable v = this.vars.get(lev);
+        // warn: propagation may change values of ALL domains
+        // not just current one
         ListDomain dom_cp = v.getDomain().copy(); // copy current domain
+        // warn: during search, the variable should take
+        // each value of the domain (as a singleton domain)
+        // instead, each iteration a value is removed from the domain
         while (v.getDomain().empty() == false) {
+        	// warn: if index out of bound, get doesn't
+        	// return null, it throws an exception
             if (this.vars.get(lev+1) != null) { // if it's not the last level
-                int h = this.evalHeuristic(); // heuristic on actual configuration of domains
+            	// warn: current variable is not given a value
+            	// heuristic becomes useless
+            	// warn: missing propagation
+            	int h = this.evalHeuristic(); // heuristic on actual configuration of domains
                 if (h > this.getBound()) {
                     bb(lev+1); // next level
                 } else { // Stop. Next try.
+                	// warn: nothing changed, next iteration
+                	// will be identical
                     continue;
                 }
             } else { // last level
@@ -347,6 +361,8 @@ class Problem {
                 }
             }
             v.getDomain().removeMin();
+            // warn: all the domains should be restored now
+            // before the next iteration
         }
         v.setDomain(dom_cp); // restore the domain
     }
