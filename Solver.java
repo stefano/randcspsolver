@@ -1,3 +1,4 @@
+
 import java.util.*;
 
 /*
@@ -29,8 +30,9 @@ class ListDomain {
     public int getMin() {
         int min = Integer.MAX_VALUE;
         for (int elem : elems) {
-            if (elem < min)
+            if (elem < min) {
                 min = elem;
+            }
         }
         return min;
     }
@@ -41,8 +43,9 @@ class ListDomain {
     public int getMax() {
         int max = Integer.MIN_VALUE;
         for (int elem : elems) {
-            if (elem > max)
+            if (elem > max) {
                 max = elem;
+            }
         }
         return max;
     }
@@ -52,7 +55,7 @@ class ListDomain {
      * Remove from the domain the minimal value
      */
     public void removeMin() {
-        int min = this.getMin();
+        Integer min = this.getMin();
         elems.remove(min);
     }
 
@@ -148,30 +151,35 @@ class Pair {
     public int y;
 
     @Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + x;
-		result = prime * result + y;
-		return result;
-	}
-    
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + x;
+        result = prime * result + y;
+        return result;
+    }
+
     @Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Pair other = (Pair) obj;
-		if (x != other.x)
-			return false;
-		if (y != other.y)
-			return false;
-		return true;
-	}
-    
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Pair other = (Pair) obj;
+        if (x != other.x) {
+            return false;
+        }
+        if (y != other.y) {
+            return false;
+        }
+        return true;
+    }
+
     public String toString() {
         return "(" + x + "," + y + ")";
     }
@@ -194,10 +202,18 @@ class BinaryConstraint {
         this.b = b;
     }
 
-    public void add(Pair p) {
-    	pairs.add(p);
+    public Variable getA() {
+        return this.a;
     }
-    
+
+    public Variable getB() {
+        return this.b;
+    }
+
+    public void add(Pair p) {
+        pairs.add(p);
+    }
+
     public BinaryConstraint transpose() {
         BinaryConstraint bc = new BinaryConstraint(b, a);
         for (Pair p : pairs) {
@@ -213,9 +229,9 @@ class BinaryConstraint {
     public boolean revise() {
         return a.getDomain().removeInconsistent(b.getDomain(), this);
     }
-    
+
     public String toString() {
-    	return "#<constraint(" + a.getName() + "," + b.getName() + "):" + pairs.toString() + ">";
+        return "#<constraint(" + a.getName() + "," + b.getName() + "):" + pairs.toString() + ">";
     }
 }
 
@@ -225,9 +241,9 @@ class BinaryConstraint {
 class Problem {
 
     public interface Evaluator {
+
         int eval(List<Variable> vars);
     }
-    
     private List<Variable> vars;
     private List<BinaryConstraint> constraints;
     private List<BinaryConstraint> constraints_t;
@@ -301,19 +317,14 @@ class Problem {
     public boolean validSol() {
         int elem1, elem2;
 
-        Iterator<Variable> iv = this.vars.iterator();
-        elem1 = iv.next().getDomain().getMax();
-        while (iv.hasNext()) {
-            elem2 = iv.next().getDomain().getMax();
-            Iterator<BinaryConstraint> ic = this.constraints.iterator();
-            while (ic.hasNext()) {
-                if (ic.next().satisfied(elem1, elem2) == false) {
-                    return false;
-                }
+        for (BinaryConstraint bc : constraints) {
+            elem1 = bc.getA().getDomain().getMax();
+            elem2 = bc.getB().getDomain().getMax();
+            if (bc.satisfied(elem1, elem2) == false) {
+                return false;
             }
-            elem1 = elem2;
         }
-
+        
         return true;
     }
 
@@ -327,32 +338,45 @@ class Problem {
         }
     }
 
+    public void printSol() {
+        if (sol.isEmpty()) {
+            System.out.println("No solutions.");
+        }
+        else {
+            System.out.print("Solutions: ");
+            for (int s : sol) {
+                System.out.print(s);
+            }
+            System.out.println();
+        }
+    }
+
     /*
      * Branch&Bound implementation
      */
-    public void bb(int lev) { 
+    public void bb(int lev) {
         Variable v = this.vars.get(lev);
         // warn: propagation may change values of ALL domains
         // not just current one
         ListDomain dom_cp = v.getDomain().copy(); // copy current domain
+        ListDomain dom_tmp = v.getDomain().copy();
         // warn: during search, the variable should take
         // each value of the domain (as a singleton domain)
         // instead, each iteration a value is removed from the domain
-        while (v.getDomain().empty() == false) {
-        	// warn: if index out of bound, get doesn't
-        	// return null, it throws an exception
-            if (this.vars.get(lev+1) != null) { // if it's not the last level
-            	// warn: current variable is not given a value
-            	// heuristic becomes useless
-            	// warn: missing propagation
-            	int h = this.evalHeuristic(); // heuristic on actual configuration of domains
+        while (dom_tmp.empty() == false) {
+            ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
+            v.setDomain(sing_dom);
+
+            // warn: if index out of bound, get doesn't
+            // return null, it throws an exception
+            if ((lev + 1) < this.vars.size()) { // if it's not the last level
+                // warn: current variable is not given a value
+                // heuristic becomes useless
+                // warn: missing propagation
+                int h = this.evalHeuristic(); // heuristic on actual configuration of domains
                 if (h > this.getBound()) {
-                    bb(lev+1); // next level
-                } else { // Stop. Next try.
-                	// warn: nothing changed, next iteration
-                	// will be identical
-                    continue;
-                }
+                    bb(lev + 1); // next level
+                } 
             } else { // last level
                 int of = this.evalObjectiveFunction();
                 if (this.validSol() && of > this.getBound()) {
@@ -360,14 +384,15 @@ class Problem {
                     this.setSol(); // save current solution as the max values in domains
                 }
             }
-            v.getDomain().removeMin();
+            dom_tmp.removeMin();
             // warn: all the domains should be restored now
             // before the next iteration
         }
         v.setDomain(dom_cp); // restore the domain
+        //System.out.println("fine bb");
     }
 
-   @Override
+    @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("Solution: " + sol.toString());
@@ -409,7 +434,7 @@ class RandomProblem extends Problem {
         }
         setVariables(vars);
         for (int i = 0; i < vars.size(); ++i) {
-            for (int j = i+1; j < vars.size(); ++j) {
+            for (int j = i + 1; j < vars.size(); ++j) {
                 if (r.nextFloat() <= density) {
                     // create constraint between v1 and v2
                     BinaryConstraint bc = new BinaryConstraint(vars.get(i), vars.get(j));
@@ -457,7 +482,8 @@ public class Solver {
     public static void main(String args[]) {
         Problem p = new RandomProblem(3, 3, 0.5f, 0.5f,
                 new MaxSum(), new MaxSum());
-        p.bb(0);
         System.out.println(p);
+        p.bb(0);
+        p.printSol();
     }
 }
