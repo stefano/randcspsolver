@@ -71,13 +71,119 @@ locale.
 
 \section{Rappresentazione dei domini}
 
+I domini sono rappresentati in modo esplicito tramite una lista di
+valori. Possono quindi essere rappresentati solo domini finiti. I
+valori appartenenti ad un dominio possono essere solamente numeri
+interi. Non si tratta di una grossa limitazione in quanto \`e sempre
+possibile associare univocamente ad ogni intero un valore. Sui domini
+\`e possibile compiere principalmente quattro tipi di operazioni:
+
+\begin{enumerate}
+\item Ottenere l'elenco dei valori appartenenti al dominio.
+\item Ottenere una copia del dominio, utilizzato dall'alrgoritmo di
+  ricerca per effettuare il backtracking.
+\item Rimuovere, in modo distruttivo, dal dominio i valori che non
+  sono consistenti con un dato vincolo. La relazione di consistenza
+  utilizzata \`e l'AC (arc consistency) direzionale.
+\item Controllare se il domino \`e fallito oppure no: un dominio
+  fallito \`e un dominio che non contiene valori.
+\end{enumerate}
+
 \section{Rappresentazione delle variabili}
+
+Ad ogni variabile \`e associato un nome ed un dominio di valori che
+pu\`o assumere . Una variabile a cui \`e stato assegnato un valore
+viene rappresentata come una variabile il cui dominio \`e un
+singoletto contenente il valore.
 
 \section{Rappresentazione dei vincoli}
 
+I vincoli binari sono rappresentati in modo esplicito. Ogni vincolo
+\`e composto da due variabili e da un insieme di coppie di valori
+accettati tra queste due variabili. L'insieme \`e implementato
+tramite una tabella di hash per poter eseguire velocemente il test di
+appartenenza. I vincoli supportano le seguenti
+operazioni:
+
+\begin{enumerate}
+\item Trasposizione: restituisce un nuovo vincolo uguale all'originale
+  ma con le variabili trasposte.
+\item Appartenenza: controlla se, data una coppia di valori per le due variabili, la
+  coppia appartiene oppure no al vincolo. Data la rappresentazione
+  esplicita dei vincoli, il controllo avviene semplicemente
+  controllando che la coppia sia presente nell'insieme delle coppie
+  del vincolo.
+\end{enumerate}
+
 \section{Funzione obiettivo ed euristica}
 
+Le funzioni obiettivo ed euristica possono essere passate come
+parametri all'algoritmo di ricerca come sottoclassi dell'interfaccia
+\textit{Problem.Evaluator} implementando il metodo \textit{eval} che,
+data una lista di variabili, ritorna la valutazione. Data la
+rappresentazione uniforme delle variabili assegnate e delle variabili
+non assegnate, l'interfaccia \textit{Problem.Evaluator} va bene come
+base sia per la funzione obiettivo (che operer\`a su variabili i cui
+domini sono singoletti) sia per l'euristica (che operer\`a invece su
+domini con uno o pi\`u elementi).
+
+\subsection{Funzione massimizzata}
+
+La funzione obiettivo massimizzata durante i test \`e la somma dei
+valori dei domini. L'euristica massimizza la somma dei valori pi\`u
+alti dei domini. Se tutte le variabili sono assegnate, l'euristica
+coincide con la funzione obiettivo, quindi \`e stata implementata solo
+una funzione.
+
+\section{Rappresentazione di un problema}
+
+Un problema \`e rappresentato come:
+
+\begin{itemize}
+\item Una lista di variabili.
+\item Una lista di vincoli tra le variabili.
+\item Una funzione obiettivo.
+\item Una funzione euristica.
+\end{itemize}
+
+\subsection{Generazione di un problema}
+
+Il generatore di problemi prende quattro parametri (oltre alle
+funzioni obiettivo ed euristica) che utilizza per generare un problema
+random:
+
+\begin{enumerate}
+\item Numero di variabili del problema. I nomi delle variabili sono un
+  numero progressivo.
+\item Cardinalit\`a del dominio. Gli elementi di ogni dominio saranno
+  numeri interi tra 0 e la cardinalit\`a (esclusa).
+\item Densit\`a dei vincoli, un numero compreso tra 0 e 1. Man mano che vengono generati i vincoli
+  binari tra tutte le possibili coppie di variabili, un vincolo viene
+  con probabilit\`a pari alla densit\`a. Viene generato un numero
+  casuale tra 0 e 1, e se non supera la densit\`a allora il vincolo
+  viene accettato.
+\item Strettezza dei vincoli, un numero compreso tra 0 e 1. Per ogni
+  vincolo vengono generate tutte le coppie possibili di valori, ed
+  ogni coppia viene accettata con una probabilit\`a pari alla
+  strettezza.
+\end{enumerate}
+
 \section{Algoritmo di propagazione}
+
+Durante la ricerca viene mantenuta la consistenza sugli archi
+(AC). L'algoritmo utilizzato per la propagazione dei vincoli \`e
+\textit{AC-1}. L'implementazione opera modificando distruttivamente i
+domini delle variabili, quindi durante la ricerca \`e necessario
+mantenere delle copie per poterli ripristinare durante il
+backtracking. \textit{AC-1} utilizza anche i vincoli trasposti, che
+vengono generati prima dell'inizio della ricerca e memorizzati, in
+modo da non doverli ricalcolare ogni volta che viene richiamato l'\textit{AC-1}.
+Per operare utilizza il metodo \textit{revise} dei vincoli, che
+richiama poi \textit{removeInconsistent} sui domini. Questi due metodi
+utilizzano il valore di ritorno per indicare se un dominio \`e stato
+modificato oppure no. Se nessun dominio \`e stato modificato dopo
+avere effettuato il revise su tutt i vincoli (trasposti e non),
+l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 
 \section{Ricerca}
 \subsection{Ripristinare i domini}
