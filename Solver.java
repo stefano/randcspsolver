@@ -249,16 +249,18 @@ class Problem {
     private List<BinaryConstraint> constraints_t;
     private Evaluator heuristic;
     private Evaluator objectiveFunction;
-    private int bound;
     private List<Integer> sol;
+    private int bound;
+    private boolean propagation;
 
-    public Problem(Evaluator h, Evaluator of) {
+    public Problem(Evaluator h, Evaluator of, boolean prop) {
         heuristic = h;
         objectiveFunction = of;
         constraints = new ArrayList<BinaryConstraint>();
         constraints_t = new ArrayList<BinaryConstraint>();
         sol = new ArrayList<Integer>();
         bound = Integer.MIN_VALUE;
+        propagation = prop;
     }
 
     public void setVariables(List<Variable> vars) {
@@ -295,6 +297,10 @@ class Problem {
         constraints_t.add(bc.transpose());
     }
 
+    public boolean doPropagation() {
+        return this.propagation;
+    }
+
     public void ac1() {
         boolean changed = true;
         while (changed) {
@@ -324,7 +330,7 @@ class Problem {
                 return false;
             }
         }
-        
+     
         return true;
     }
 
@@ -343,7 +349,7 @@ class Problem {
             System.out.println("No solutions.");
         }
         else {
-            System.out.print("Solutions: ");
+            System.out.print("Solution: ");
             for (int s : sol) {
                 System.out.print(s);
             }
@@ -355,41 +361,46 @@ class Problem {
      * Branch&Bound implementation
      */
     public void bb(int lev) {
-        Variable v = this.vars.get(lev);
-        // warn: propagation may change values of ALL domains
-        // not just current one
-        ListDomain dom_cp = v.getDomain().copy(); // copy current domain
-        ListDomain dom_tmp = v.getDomain().copy();
-        // warn: during search, the variable should take
-        // each value of the domain (as a singleton domain)
-        // instead, each iteration a value is removed from the domain
-        while (dom_tmp.empty() == false) {
-            ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
-            v.setDomain(sing_dom);
+        Variable cv = this.vars.get(lev);
+        List<ListDomain> dom_copy = new ArrayList<ListDomain>();
 
-            // warn: if index out of bound, get doesn't
-            // return null, it throws an exception
+        if (this.doPropagation()) {
+                this.ac1();
+        }
+        ListDomain dom_tmp = cv.getDomain().copy(); // copy current domain
+       
+        while (dom_tmp.empty() == false) {
+            dom_copy.clear();
+            for (Variable v : vars) {
+                dom_copy.add(v.getDomain().copy()); // copy all domains
+            }
+            ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
+            cv.setDomain(sing_dom);
+            
+            if (this.doPropagation()) {
+                this.ac1();
+            }
+
             if ((lev + 1) < this.vars.size()) { // if it's not the last level
-                // warn: current variable is not given a value
-                // heuristic becomes useless
-                // warn: missing propagation
                 int h = this.evalHeuristic(); // heuristic on actual configuration of domains
                 if (h > this.getBound()) {
                     bb(lev + 1); // next level
                 } 
             } else { // last level
                 int of = this.evalObjectiveFunction();
-                if (this.validSol() && of > this.getBound()) {
-                    this.setBound(of);
-                    this.setSol(); // save current solution as the max values in domains
+                if (of > this.getBound()) {
+                    if (this.doPropagation() || this.validSol()) { // if propagation or, if not, if valid
+                        this.setBound(of);
+                        this.setSol(); // save current solution as the max values in domains
+                    }
                 }
             }
+
             dom_tmp.removeMin();
-            // warn: all the domains should be restored now
-            // before the next iteration
-        }
-        v.setDomain(dom_cp); // restore the domain
-        //System.out.println("fine bb");
+            for (int i = lev; i < this.vars.size(); i++) { // restore next domains from the current level
+                this.vars.get(i).setDomain(dom_copy.get(i));
+            }
+        } // end while
     }
 
     @Override
@@ -421,8 +432,8 @@ class RandomProblem extends Problem {
     private Random r = new Random();
 
     public RandomProblem(int nvars, int length, float density,
-            float strictness, Evaluator h, Evaluator of) {
-        super(h, of);
+            float strictness, Evaluator h, Evaluator of, boolean prop) {
+        super(h, of, prop);
         List<Integer> values = new ArrayList<Integer>();
         for (int i = 0; i < length; ++i) {
             values.add(i);
@@ -481,7 +492,7 @@ public class Solver {
 
     public static void main(String args[]) {
         Problem p = new RandomProblem(3, 3, 0.5f, 0.5f,
-                new MaxSum(), new MaxSum());
+                new MaxSum(), new MaxSum(), true);
         System.out.println(p);
         p.bb(0);
         p.printSol();
