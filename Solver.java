@@ -491,8 +491,39 @@ class MaxSum implements Problem.Evaluator {
 public class Solver {
 
     public static void main(String args[]) {
-        Problem p = new RandomProblem(3, 3, 0.5f, 0.5f,
-                new MaxSum(), new MaxSum(), true);
+        int n = 3, l = 3;
+        float d = 0.5f, s = 0.5f;
+        boolean ac = false;
+
+        // command line parser - rudimental [solo per provare]
+        // TODO: error handling
+        for (int i=0; i<args.length; i++) {
+            if (args[i].equals("-n")) {
+                n = Integer.parseInt(args[i+1]);
+                i++;
+            }
+            else if(args[i].equals("-l")) {
+                l = Integer.parseInt(args[i+1]);
+                i++;
+            }
+            else if(args[i].equals("-d")) {
+                d = Float.parseFloat(args[i+1]);
+                i++;
+            }
+            else if(args[i].equals("-s")) {
+                s = Float.parseFloat(args[i+1]);
+                i++;
+            }
+            else if(args[i].equals("-ac")) {
+                ac = true;
+            }
+            else {
+                System.out.println("Error: unknown parameter.");
+            }
+        }
+
+        Problem p = new RandomProblem(n, l, d, s,
+                new MaxSum(), new MaxSum(), ac);
         System.out.println(p);
         p.bb(0);
         p.printSol();
