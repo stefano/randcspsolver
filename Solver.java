@@ -139,6 +139,11 @@ class Variable {
     public String toString() {
         return name + " = " + domain.toString();
     }
+
+	public void toMinion(StringBuffer sb) {
+		sb.append("DISCRETE " + getName() + " {" + 
+				domain.getMin() + ".." + domain.getMax() + "}\n");
+	}
 }
 
 class Pair {
@@ -233,6 +238,23 @@ class BinaryConstraint {
     public String toString() {
         return "#<constraint(" + a.getName() + "," + b.getName() + "):" + pairs.toString() + ">";
     }
+
+    private String minionTable() {
+    	return a.getName() + "_" + b.getName();
+    }
+    
+	public void toMinion(StringBuffer sb) {
+		sb.append(minionTable() + " " + pairs.size() + " 2\n");
+		for (Pair p : pairs) {
+			sb.append(p.x + " " + p.y + "\n");
+		}
+	}
+
+	public void toMinionTable(StringBuffer sb) {
+		sb.append("table([");
+		sb.append(a.getName() + "," + b.getName() + "],");
+		sb.append(minionTable() + ")\n");
+	}
 }
 
 /*
@@ -243,6 +265,10 @@ class Problem {
     public interface Evaluator {
 
         int eval(List<Variable> vars);
+
+		void toMinion(StringBuffer sb);
+
+		String minionName();
     }
     private List<Variable> vars;
     private List<BinaryConstraint> constraints;
@@ -422,6 +448,53 @@ class Problem {
 
         return sb.toString();
     }
+    
+    // output an equivalent minion file to sb
+    public void toMinion(StringBuffer sb) {
+    	// header
+    	sb.append("MINION 3\n\n");
+    	sb.append("**VARIABLES**\n\n");
+    	// variables
+    	for (Variable v : vars) {
+    		v.toMinion(sb);
+    	}
+    	// variable to maximize
+    	objectiveFunction.toMinion(sb);
+    	// search
+    	sb.append("**SEARCH**\n\n");
+    	sb.append("MAXIMISING " + objectiveFunction.minionName() + "\n");
+    	sb.append("PRINT [");
+    	StringBuffer sb2 = new StringBuffer();
+    	sb2.append("[");
+    	int n = 0;
+    	for (Variable v : vars) {
+    		sb2.append(v.getName());
+    		if (n != vars.size()-1) {
+    			sb2.append(",");
+    		}
+    		n++;
+    	}
+    	sb2.append("]");
+    	String varList = sb2.toString();
+    	sb.append(varList);
+    	sb.append("]\n");
+    	sb.append("VARORDER ");
+    	sb.append(varList);
+    	sb.append("\n\n");
+    	// constraints
+    	sb.append("**TUPLELIST**\n");
+    	for (BinaryConstraint c : constraints) {
+    		c.toMinion(sb);
+    	}
+    	sb.append("**CONSTRAINTS**\n");
+    	sb.append("sumleq(" + varList + "," + objectiveFunction.minionName() + ")\n");
+    	sb.append("sumgeq(" + varList + "," + objectiveFunction.minionName() + ")\n");
+    	for (BinaryConstraint c : constraints) {
+    		c.toMinionTable(sb);
+    	}
+    	// end
+    	sb.append("**EOF**");
+    }
 }
 
 /*
@@ -441,7 +514,7 @@ class RandomProblem extends Problem {
         ListDomain dom = new ListDomain(values);
         List<Variable> vars = new ArrayList<Variable>();
         for (int i = 0; i < nvars; ++i) {
-            vars.add(new Variable((new Integer(i)).toString(), dom.copy()));
+            vars.add(new Variable("V" + i, dom.copy()));
         }
         setVariables(vars);
         for (int i = 0; i < vars.size(); ++i) {
@@ -486,6 +559,16 @@ class MaxSum implements Problem.Evaluator {
 
         return sum;
     }
+
+	@Override
+	public String minionName() {
+		return "SUM";
+	}
+
+	@Override
+	public void toMinion(StringBuffer sb) {
+		sb.append("DISCRETE SUM {" + Integer.MIN_VALUE + ".." + Integer.MAX_VALUE + "}\n");
+	}
 }
 
 public class Solver {
@@ -494,11 +577,15 @@ public class Solver {
         int n = 3, l = 3;
         float d = 0.5f, s = 0.5f;
         boolean ac = false;
+        boolean printMinion = false;
 
         // command line parser - rudimental [solo per provare]
         // TODO: error handling
         for (int i=0; i<args.length; i++) {
-            if (args[i].equals("-n")) {
+        	if (args[i].equals("-m")) {
+        		printMinion = true;
+        	}
+        	else if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[i+1]);
                 i++;
             }
@@ -524,6 +611,11 @@ public class Solver {
 
         Problem p = new RandomProblem(n, l, d, s,
                 new MaxSum(), new MaxSum(), ac);
+        if (printMinion) {
+        	StringBuffer sb = new StringBuffer();
+        	p.toMinion(sb);
+        	System.out.println(sb.toString());
+        }
         System.out.println(p);
         p.bb(0);
         p.printSol();
