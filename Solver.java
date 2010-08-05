@@ -144,6 +144,22 @@ class Variable {
 		sb.append("DISCRETE " + getName() + " {" + 
 				domain.getMin() + ".." + domain.getMax() + "}\n");
 	}
+	
+	static public String minionVarList(List<Variable> vars) {
+		StringBuffer sb = new StringBuffer();
+		sb.append("[");
+		int n = 0;
+		for (Variable v : vars) {
+			sb.append(v.getName());
+			if (n != vars.size()-1) {
+				sb.append(",");
+			}
+			n++;
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+	
 }
 
 class Pair {
@@ -263,13 +279,12 @@ class BinaryConstraint {
 class Problem {
 
     public interface Evaluator {
-
         int eval(List<Variable> vars);
-
-		void toMinion(StringBuffer sb);
-
+		void toMinion(StringBuffer sb, List<Variable> vars);
+		void toMinionVariable(StringBuffer sb, List<Variable> vars);
 		String minionName();
     }
+    
     private List<Variable> vars;
     private List<BinaryConstraint> constraints;
     private List<BinaryConstraint> constraints_t;
@@ -459,23 +474,13 @@ class Problem {
     		v.toMinion(sb);
     	}
     	// variable to maximize
-    	objectiveFunction.toMinion(sb);
+    	objectiveFunction.toMinionVariable(sb, vars);
     	// search
     	sb.append("**SEARCH**\n\n");
     	sb.append("MAXIMISING " + objectiveFunction.minionName() + "\n");
     	sb.append("PRINT [");
-    	StringBuffer sb2 = new StringBuffer();
-    	sb2.append("[");
-    	int n = 0;
-    	for (Variable v : vars) {
-    		sb2.append(v.getName());
-    		if (n != vars.size()-1) {
-    			sb2.append(",");
-    		}
-    		n++;
-    	}
-    	sb2.append("]");
-    	String varList = sb2.toString();
+
+    	String varList = Variable.minionVarList(vars);
     	sb.append(varList);
     	sb.append("]\n");
     	sb.append("VARORDER ");
@@ -487,8 +492,7 @@ class Problem {
     		c.toMinion(sb);
     	}
     	sb.append("**CONSTRAINTS**\n");
-    	sb.append("sumleq(" + varList + "," + objectiveFunction.minionName() + ")\n");
-    	sb.append("sumgeq(" + varList + "," + objectiveFunction.minionName() + ")\n");
+    	objectiveFunction.toMinion(sb, vars);
     	for (BinaryConstraint c : constraints) {
     		c.toMinionTable(sb);
     	}
@@ -566,8 +570,15 @@ class MaxSum implements Problem.Evaluator {
 	}
 
 	@Override
-	public void toMinion(StringBuffer sb) {
-		sb.append("DISCRETE SUM {" + Integer.MIN_VALUE + ".." + Integer.MAX_VALUE + "}\n");
+	public void toMinion(StringBuffer sb, List<Variable> vars) {
+		String varList = Variable.minionVarList(vars);
+    	sb.append("sumleq(" + varList + "," + minionName() + ")\n");
+    	sb.append("sumgeq(" + varList + "," + minionName() + ")\n");
+	}
+	
+	@Override
+	public void toMinionVariable(StringBuffer sb, List<Variable> vars) {
+		sb.append("DISCRETE SUM {0.." + eval(vars) + "}\n");		
 	}
 }
 
