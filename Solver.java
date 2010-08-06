@@ -1,4 +1,5 @@
-
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /*
@@ -393,6 +394,7 @@ class Problem {
             System.out.print("Solution: ");
             for (int s : sol) {
                 System.out.print(s);
+                System.out.print(' ');
             }
             System.out.println();
         }
@@ -589,12 +591,15 @@ public class Solver {
         float d = 0.5f, s = 0.5f;
         boolean ac = false;
         boolean printMinion = false;
-
+        String minionFileName = null;
+        
         // command line parser - rudimental [solo per provare]
         // TODO: error handling
         for (int i=0; i<args.length; i++) {
         	if (args[i].equals("-m")) {
         		printMinion = true;
+        		minionFileName = args[i+1];
+        		i++;
         	}
         	else if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[i+1]);
@@ -625,7 +630,13 @@ public class Solver {
         if (printMinion) {
         	StringBuffer sb = new StringBuffer();
         	p.toMinion(sb);
-        	System.out.println(sb.toString());
+        	try {
+        		FileWriter f = new FileWriter(minionFileName);
+        		f.write(sb.toString());
+        		f.close();
+        	} catch (IOException e) {
+        		System.err.println("Error while creating file " + minionFileName);
+        	}
         }
         System.out.println(p);
         p.bb(0);
