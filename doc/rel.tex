@@ -190,6 +190,19 @@ l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 \subsection{Scelta della variabile}
 \subsection{Scelta del valore}
 
+\section{Test}
+
+Per controllare la correttezza del programma, per ogni problema random
+generato \`e possibile stampare l'equivalente script per il programma
+\textit{Minion}. Questo permette di confrontare la soluzione trovata
+da \textit{Minion} con quella del nostro programma.
+
+Per la generazione, \`e stato aggiunto il metodo \textit{toMinion}
+alle classi \textit{Variable}, \textit{BinaryConstraint},
+\textit{Problem} e all'interfaccia \textit{Problem.Evaluator}. Questo
+metodo genera la rappresentazione dell'oggetto in un formato testuale
+adatto ad uno script \textit{minion}.
+
 \section{Benchmark}
 
 \subsection{Al variare di ...}
