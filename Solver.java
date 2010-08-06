@@ -584,12 +584,66 @@ class MaxSum implements Problem.Evaluator {
 	}
 }
 
+class Benchmark {
+	public interface SingleRun {
+		public void run();
+	}
+	
+	private SingleRun toRun;
+	private int nrun;
+	
+	public Benchmark(SingleRun r, int nrun) {
+		toRun = r;
+		this.nrun = nrun;
+	}
+	
+	public void runAll() {
+		long max = Long.MIN_VALUE;
+		long min = Long.MAX_VALUE;
+		long total_time = 0;
+		
+		for (int i = 0; i < nrun; ++i) {
+			long start = System.currentTimeMillis();
+			toRun.run();
+			long time = System.currentTimeMillis() - start;
+			max = Math.max(max, time);
+			min = Math.min(min, time);
+			total_time += time;
+		}
+		
+		long avg = (total_time - (max + min)) / (nrun - 2);
+		System.out.println("Average/Max/Min running time: " +
+				avg + "/" + max + "/" + min);
+	}
+}
+
+class RandomProblemBenchmark implements Benchmark.SingleRun {	
+	private int n;
+	private int l;
+	private float d;
+	private float s;
+	private boolean ac;
+
+	public RandomProblemBenchmark(int n, int l, float d, float s, boolean ac) {
+		this.n = n;
+		this.l = l;
+		this.d = d;
+		this.s = s;
+		this.ac = ac;
+	}
+	
+	public void run() {
+		(new RandomProblem(n, l, d, s, new MaxSum(), new MaxSum(), ac)).bb(0);
+	}
+}
+
 public class Solver {
 
     public static void main(String args[]) {
         int n = 3, l = 3;
         float d = 0.5f, s = 0.5f;
         boolean ac = false;
+        boolean benchmark = false;
         boolean printMinion = false;
         String minionFileName = null;
         
@@ -600,6 +654,9 @@ public class Solver {
         		printMinion = true;
         		minionFileName = args[i+1];
         		i++;
+        	} 
+        	else if (args[i].equals("-b")) {
+        		benchmark = true;
         	}
         	else if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[i+1]);
@@ -625,21 +682,27 @@ public class Solver {
             }
         }
 
-        Problem p = new RandomProblem(n, l, d, s,
-                new MaxSum(), new MaxSum(), ac);
-        if (printMinion) {
-        	StringBuffer sb = new StringBuffer();
-        	p.toMinion(sb);
-        	try {
-        		FileWriter f = new FileWriter(minionFileName);
-        		f.write(sb.toString());
-        		f.close();
-        	} catch (IOException e) {
-        		System.err.println("Error while creating file " + minionFileName);
+        if (benchmark) {
+        	Benchmark b = 
+        		new Benchmark(new RandomProblemBenchmark(n, l, d, s, ac), 50);
+        	b.runAll();
+        } else {
+        	Problem p = new RandomProblem(n, l, d, s, new MaxSum(), 
+        			new MaxSum(), ac);
+        	if (printMinion) {
+        		StringBuffer sb = new StringBuffer();
+        		p.toMinion(sb);
+        		try {
+        			FileWriter f = new FileWriter(minionFileName);
+        			f.write(sb.toString());
+        			f.close();
+        		} catch (IOException e) {
+        			System.err.println("Error while creating file " + minionFileName);
+        		}
         	}
+        	System.out.println(p);
+        	p.bb(0);
+           	p.printSol();
         }
-        System.out.println(p);
-        p.bb(0);
-        p.printSol();
     }
 }
