@@ -294,6 +294,7 @@ class Problem {
     private List<Integer> sol;
     private int bound;
     private boolean propagation;
+    private int visitedNodes;
 
     public Problem(Evaluator h, Evaluator of, boolean prop) {
         heuristic = h;
@@ -303,6 +304,7 @@ class Problem {
         sol = new ArrayList<Integer>();
         bound = Integer.MIN_VALUE;
         propagation = prop;
+        visitedNodes = 0;
     }
 
     public void setVariables(List<Variable> vars) {
@@ -400,6 +402,14 @@ class Problem {
         }
     }
 
+    public boolean hasSolution() {
+    	return !sol.isEmpty();
+    }
+
+    public int getVisitedNodes() {
+    	return visitedNodes;
+    }
+    
     /*
      * Branch&Bound implementation
      */
@@ -416,6 +426,7 @@ class Problem {
             }
             ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
             cv.setDomain(sing_dom);
+            visitedNodes++;
             
             if (doPropagation()) {
                 ac1();
@@ -586,6 +597,7 @@ class Benchmark {
 	public interface SingleRun {
 	    public void setup();
 		public void run();
+		public Problem getProblem();
 	}
 	
 	private SingleRun toRun;
@@ -600,6 +612,9 @@ class Benchmark {
 		long max = Long.MIN_VALUE;
 		long min = Long.MAX_VALUE;
 		long total_time = 0;
+		int visitedNodes = 0;
+		int maxNodes = Integer.MIN_VALUE;
+		int minNodes = Integer.MAX_VALUE;
 		
 		for (int i = 0; i < nrun; ++i) {
 		    toRun.setup();
@@ -609,11 +624,18 @@ class Benchmark {
 			max = Math.max(max, time);
 			min = Math.min(min, time);
 			total_time += time;
+			int nodes = toRun.getProblem().getVisitedNodes();
+			maxNodes = Math.max(maxNodes, nodes);
+			minNodes = Math.min(minNodes, nodes);
+			visitedNodes += nodes;
 		}
 		
-		long avg = (total_time - (max + min)) / (nrun - 2);
+		double avg = (total_time - (max + min)) / (nrun - 2.0);
+		float avgNodes = (visitedNodes - (maxNodes + minNodes)) / (nrun - 2.0f);
 		System.out.println("Average/Max/Min running time: " +
 				avg + "/" + max + "/" + min);
+		System.out.println("Average/Max/Min visited nodes: " +
+				avgNodes + "/" + maxNodes + "/" + minNodes);
 	}
 }
 
@@ -624,13 +646,15 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 	private float s;
 	private boolean ac;
     private Problem p;
-
+    private int solutions;
+    
 	public RandomProblemBenchmark(int n, int l, float d, float s, boolean ac) {
 		this.n = n;
 		this.l = l;
 		this.d = d;
 		this.s = s;
 		this.ac = ac;
+		solutions = 0;
 	}
 	
     public void setup() {
@@ -639,6 +663,17 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 
 	public void run() {
 		p.bb(0);
+		if (p.hasSolution()) {
+			solutions++;
+		}
+	}
+	
+	public Problem getProblem() {
+		return p;
+	}
+
+	public void printStats() {
+		System.out.println("Problems with solution: " + solutions);
 	}
 }
 
@@ -691,9 +726,10 @@ public class Solver {
         }
 
         if (benchmark) {
-        	Benchmark b = 
-        		new Benchmark(new RandomProblemBenchmark(n, l, d, s, ac), nrun);
+        	RandomProblemBenchmark rpb = new RandomProblemBenchmark(n, l, d, s, ac);
+        	Benchmark b = new Benchmark(rpb, nrun);
         	b.runAll();
+        	rpb.printStats();
         } else {
         	Problem p = new RandomProblem(n, l, d, s, new MaxSum(), 
         			new MaxSum(), ac);
