@@ -56,8 +56,8 @@ class ListDomain {
      * Remove from the domain the maximum value
      */
     public void removeMax() {
-        Integer min = this.getMax();
-        elems.remove(min);
+        Integer max = this.getMax();
+        elems.remove(max);
     }
 
 
