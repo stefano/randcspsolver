@@ -53,10 +53,10 @@ class ListDomain {
 
 
     /*
-     * Remove from the domain the minimal value
+     * Remove from the domain the maximum value
      */
-    public void removeMin() {
-        Integer min = this.getMin();
+    public void removeMax() {
+        Integer min = this.getMax();
         elems.remove(min);
     }
 
@@ -424,7 +424,7 @@ class Problem {
             for (Variable v : vars) {
                 dom_copy.add(v.getDomain().copy()); // copy all domains
             }
-            ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
+            ListDomain sing_dom = new ListDomain(dom_tmp.getMax());
             cv.setDomain(sing_dom);
             visitedNodes++;
             
@@ -448,7 +448,7 @@ class Problem {
             	}
             }
 
-            dom_tmp.removeMin();
+            dom_tmp.removeMax();
             for (int i = 0; i < vars.size(); i++) { // restore domains
                 vars.get(i).setDomain(dom_copy.get(i));
             }
