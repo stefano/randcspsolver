@@ -407,9 +407,6 @@ class Problem {
         Variable cv = this.vars.get(lev);
         List<ListDomain> dom_copy = new ArrayList<ListDomain>();
 
-        if (this.doPropagation()) {
-                this.ac1();
-        }
         ListDomain dom_tmp = cv.getDomain().copy(); // copy current domain
        
         while (dom_tmp.empty() == false) {
@@ -420,28 +417,29 @@ class Problem {
             ListDomain sing_dom = new ListDomain(dom_tmp.getMin());
             cv.setDomain(sing_dom);
             
-            if (this.doPropagation()) {
-                this.ac1();
+            if (doPropagation()) {
+                ac1();
             }
-
-            if ((lev + 1) < this.vars.size()) { // if it's not the last level
-                int h = this.evalHeuristic(); // heuristic on actual configuration of domains
-                if (h > this.getBound()) {
-                    bb(lev + 1); // next level
-                } 
-            } else { // last level
-                int of = this.evalObjectiveFunction();
-                if (of > this.getBound()) {
-                    if (this.doPropagation() || this.validSol()) { // if propagation or, if not, if valid
-                        this.setBound(of);
-                        this.setSol(); // save current solution as the max values in domains
-                    }
-                }
+            if (!doPropagation() || notFailed()) {
+            	if ((lev + 1) < vars.size()) { // if it's not the last level
+            		int h = evalHeuristic(); // heuristic on actual configuration of domains
+            		if (h > getBound()) {
+            			bb(lev + 1); // next level
+            		}
+            	} else { // last level
+            		int of = evalObjectiveFunction();
+            		if (of > getBound()) {
+            			if (doPropagation() || validSol()) { // if propagation or, if not, if valid
+            				setBound(of);
+            				setSol(); // save current solution as the max values in domains
+            			}
+            		}
+            	}
             }
 
             dom_tmp.removeMin();
-            for (int i = lev; i < this.vars.size(); i++) { // restore next domains from the current level
-                this.vars.get(i).setDomain(dom_copy.get(i));
+            for (int i = 0; i < vars.size(); i++) { // restore domains
+                vars.get(i).setDomain(dom_copy.get(i));
             }
         } // end while
     }
@@ -586,6 +584,7 @@ class MaxSum implements Problem.Evaluator {
 
 class Benchmark {
 	public interface SingleRun {
+	    public void setup();
 		public void run();
 	}
 	
@@ -603,6 +602,7 @@ class Benchmark {
 		long total_time = 0;
 		
 		for (int i = 0; i < nrun; ++i) {
+		    toRun.setup();
 			long start = System.currentTimeMillis();
 			toRun.run();
 			long time = System.currentTimeMillis() - start;
@@ -623,6 +623,7 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 	private float d;
 	private float s;
 	private boolean ac;
+    private Problem p;
 
 	public RandomProblemBenchmark(int n, int l, float d, float s, boolean ac) {
 		this.n = n;
@@ -632,8 +633,12 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 		this.ac = ac;
 	}
 	
+    public void setup() {
+    	p = new RandomProblem(n, l, d, s, new MaxSum(), new MaxSum(), ac);
+    }
+
 	public void run() {
-		(new RandomProblem(n, l, d, s, new MaxSum(), new MaxSum(), ac)).bb(0);
+		p.bb(0);
 	}
 }
 
@@ -644,6 +649,7 @@ public class Solver {
         float d = 0.5f, s = 0.5f;
         boolean ac = false;
         boolean benchmark = false;
+        int nrun = 0;
         boolean printMinion = false;
         String minionFileName = null;
         
@@ -657,6 +663,8 @@ public class Solver {
         	} 
         	else if (args[i].equals("-b")) {
         		benchmark = true;
+                nrun = Integer.parseInt(args[i+1]);
+                i++;
         	}
         	else if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[i+1]);
@@ -684,7 +692,7 @@ public class Solver {
 
         if (benchmark) {
         	Benchmark b = 
-        		new Benchmark(new RandomProblemBenchmark(n, l, d, s, ac), 50);
+        		new Benchmark(new RandomProblemBenchmark(n, l, d, s, ac), nrun);
         	b.runAll();
         } else {
         	Problem p = new RandomProblem(n, l, d, s, new MaxSum(), 
