@@ -62,25 +62,29 @@ Anno Accademico 2009-2010
 
 \section{Scopo del progetto}
 
-Risoluzione di problemi di ottimizzazione espressi sotto forma di
-problema di vincoli binari con variabili con domini finiti. Le
+Scopo del progetto \`e la risoluzione di problemi di ottimizzazione
+espressi sotto forma di CSP binari con variabili a domini finiti. Le
 performance del risolutore sono state testate su problemi generati
-casualmente. Il risolutore \`e stato valutato con e senza la
-propagazione di vincoli utilizzando AC come criterio di consistenza
-locale.
+casualmente. Sono stati messi a confronto i tempi di risoluzione ed il
+numero di nodi visitati durante la ricerca di una soluzione ottima tra
+un risolutore che non utilizza nessun tipo di propagazione ed uno che
+invece mantiene il problema consistente localmente. Il criterio
+utilizzato per la consistenza locale \`e la consistenza sugli archi
+(AC).
 
 \section{Rappresentazione dei domini}
 
-I domini sono rappresentati in modo esplicito tramite una lista di
-valori. Possono quindi essere rappresentati solo domini finiti. I
-valori appartenenti ad un dominio possono essere solamente numeri
-interi. Non si tratta di una grossa limitazione in quanto \`e sempre
-possibile associare univocamente ad ogni intero un valore. Sui domini
-\`e possibile compiere principalmente quattro tipi di operazioni:
+I domini sono rappresentati dalla classe \textit{ListDomain} in modo
+esplicito tramite una lista di valori. Possono quindi essere
+rappresentati solo domini finiti. I valori appartenenti ad un dominio
+possono essere solamente numeri interi. Non si tratta di una grossa
+limitazione in quanto \`e sempre possibile associare univocamente ad
+ogni intero un valore. Sui domini \`e possibile compiere
+principalmente quattro tipi di operazioni:
 
 \begin{enumerate}
 \item Ottenere l'elenco dei valori appartenenti al dominio.
-\item Ottenere una copia del dominio, utilizzato dall'alrgoritmo di
+\item Ottenere una copia del dominio, utilizzato dall'algoritmo di
   ricerca per effettuare il backtracking.
 \item Rimuovere, in modo distruttivo, dal dominio i valori che non
   sono consistenti con un dato vincolo. La relazione di consistenza
@@ -91,21 +95,28 @@ possibile associare univocamente ad ogni intero un valore. Sui domini
 
 \section{Rappresentazione delle variabili}
 
-Ad ogni variabile \`e associato un nome ed un dominio di valori che
-pu\`o assumere . Una variabile a cui \`e stato assegnato un valore
-viene rappresentata come una variabile il cui dominio \`e un
-singoletto contenente il valore.
+Le variabili sono rappresentate dalla classe \textit{Variable}. Ad
+ogni variabile \`e associato un nome ed un dominio di valori che pu\`o
+assumere . Una variabile a cui \`e stato assegnato un valore viene
+rappresentata come una variabile il cui dominio \`e un singoletto
+contenente il valore. Le due operazioni principali su una variabile
+sono:
+\begin{enumerate}
+\item Ottenere il suo dominio.
+\item Impostare un nuovo dominio.
+\end{enumerate}
 
 \section{Rappresentazione dei vincoli}
 
-I vincoli binari sono rappresentati in modo esplicito. Ogni vincolo
-\`e composto da due variabili e da un insieme di coppie di valori
-accettati tra queste due variabili. L'insieme \`e implementato
-tramite una tabella di hash per poter eseguire velocemente il test di
-appartenenza. I vincoli supportano le seguenti
-operazioni:
+I vincoli binari sono rappresentati dalla classe
+\textit{BinaryConstraint} in modo esplicito. Ogni vincolo \`e composto
+da due variabili e da un insieme di coppie di valori accettati tra
+queste due variabili. L'insieme \`e implementato tramite una tabella
+di hash per poter eseguire velocemente il test di appartenenza. I
+vincoli supportano le seguenti operazioni:
 
 \begin{enumerate}
+\item Ottenere le due variabili che partecipano nel vincolo.
 \item Trasposizione: restituisce un nuovo vincolo uguale all'originale
   ma con le variabili trasposte.
 \item Appartenenza: controlla se, data una coppia di valori per le due variabili, la
@@ -113,6 +124,8 @@ operazioni:
   esplicita dei vincoli, il controllo avviene semplicemente
   controllando che la coppia sia presente nell'insieme delle coppie
   del vincolo.
+\item Revise: rimuove dalla prima variabile i valori che non sono
+  consistenti con la seconda variabile rispetto al vincolo.
 \end{enumerate}
 
 \section{Funzione obiettivo ed euristica}
@@ -130,10 +143,10 @@ domini con uno o pi\`u elementi).
 \subsection{Funzione massimizzata}
 
 La funzione obiettivo massimizzata durante i test \`e la somma dei
-valori dei domini. L'euristica massimizza la somma dei valori pi\`u
-alti dei domini. Se tutte le variabili sono assegnate, l'euristica
-coincide con la funzione obiettivo, quindi \`e stata implementata solo
-una funzione.
+valori delle variabili. L'euristica massimizza quindi la somma dei
+valori pi\`u alti dei domini. Se tutte le variabili sono assegnate,
+l'euristica coincide con la funzione obiettivo, quindi \`e stata
+implementata solo una funzione.
 
 \section{Rappresentazione di un problema}
 
@@ -145,6 +158,9 @@ Un problema \`e rappresentato come:
 \item Una funzione obiettivo.
 \item Una funzione euristica.
 \end{itemize}
+
+Inoltre un problema mantiene internamente un contatore dei nodi
+visitati dall'algoritmo di ricerca.
 
 \subsection{Generazione di un problema}
 
@@ -158,7 +174,7 @@ random:
 \item Cardinalit\`a del dominio. Gli elementi di ogni dominio saranno
   numeri interi tra 0 e la cardinalit\`a (esclusa).
 \item Densit\`a dei vincoli, un numero compreso tra 0 e 1. Man mano che vengono generati i vincoli
-  binari tra tutte le possibili coppie di variabili, un vincolo viene
+  binari tra tutte le possibili coppie di variabili, un vincolo viene accettato
   con probabilit\`a pari alla densit\`a. Viene generato un numero
   casuale tra 0 e 1, e se non supera la densit\`a allora il vincolo
   viene accettato.
@@ -166,6 +182,19 @@ random:
   vincolo vengono generate tutte le coppie possibili di valori, ed
   ogni coppia viene accettata con una probabilit\`a pari alla
   strettezza.
+\end{enumerate}
+
+La generazione procede nel seguente modo:
+\begin{enumerate}
+\item Crea un dominio con \textit{D} elementi.
+\item Crea \textit{N} variabili. Ad ogni variabile assegna come
+  dominio una copia del dominio creato al passo 1.
+\item Per ogni coppia di variabili, genera un numero casuale tra 0 e
+  1. Se non supera la soglia della densit\`a, crea un vincolo binario
+  tra le due variabili. Se \`e stato generato il vincolo, per ogni
+  possibile coppia di valori delle due variabili, genera un numero
+  casuale tra 0 e 1. Se il numero non supera la strettezza, aggiungi
+  la coppia tra le coppie accettate dal vincolo.
 \end{enumerate}
 
 \section{Algoritmo di propagazione}
@@ -181,8 +210,8 @@ modo da non doverli ricalcolare ogni volta che viene richiamato l'\textit{AC-1}.
 Per operare utilizza il metodo \textit{revise} dei vincoli, che
 richiama poi \textit{removeInconsistent} sui domini. Questi due metodi
 utilizzano il valore di ritorno per indicare se un dominio \`e stato
-modificato oppure no. Se nessun dominio \`e stato modificato dopo
-avere effettuato il revise su tutt i vincoli (trasposti e non),
+modificato oppure no durante l'operazione. Se nessun dominio \`e stato modificato dopo
+avere effettuato il revise su tutti i vincoli (trasposti e non),
 l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 
 \section{Ricerca}
@@ -193,15 +222,20 @@ l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 \section{Test}
 
 Per controllare la correttezza del programma, per ogni problema random
-generato \`e possibile stampare l'equivalente script per il programma
+generato \`e possibile stampare l'equivalente script per il risolutore
 \textit{Minion}. Questo permette di confrontare la soluzione trovata
 da \textit{Minion} con quella del nostro programma.
 
 Per la generazione, \`e stato aggiunto il metodo \textit{toMinion}
 alle classi \textit{Variable}, \textit{BinaryConstraint},
-\textit{Problem} e all'interfaccia \textit{Problem.Evaluator}. Questo
+\textit{Problem} ed all'interfaccia \textit{Problem.Evaluator}. Questo
 metodo genera la rappresentazione dell'oggetto in un formato testuale
-adatto ad uno script \textit{minion}.
+adatto ad uno script \textit{Minion}. Per eseguirlo \`e sufficiente
+usare il comando:
+
+\begin{verbatim}
+  $ minion nome_del_file_generato
+\end{verbatim}
 
 \section{Benchmark}
 
