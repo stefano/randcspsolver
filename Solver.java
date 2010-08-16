@@ -759,30 +759,5 @@ public class Solver {
         	p.bb(0);
            	p.printSol();
         }
-
-        /*
-        long start, time = 0;
-        int nodes = 0;
-
-        for (int i = 0; i < 50; i++) {
-            start = System.nanoTime();
-
-            Problem p = new RandomProblem(n, l, d, s,
-                new MaxSum(), new MaxSum(), ac);
-            //System.out.println(p);
-            p.bb(0);
-            //p.printSol();
-            time += (System.nanoTime()-start);
-            nodes += p.getVisitedNodes();
-        }
-
-        System.out.print(";\"Num\";" + n);
-        System.out.print(";\"Len\";" + l);
-        System.out.print(";\"Den\";" + printFloat(d));
-        System.out.print(";\"Str\";" + printFloat(s));
-        System.out.print(";\"Prop\";" + ac);
-        System.out.print(";\"Avg visited\";" + nodes / 50);
-        System.out.println(";\"Avg time\";" + time / 50);
-        */
     }
 }
