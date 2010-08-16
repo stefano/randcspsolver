@@ -7,7 +7,7 @@ for n in {1,2,3,4,5,6,7,8};
 do java Solver -n $n -l 3 -d 0.5 -s 0.5 -b 50 >> output.csv;
 done
 
-echo -e "\"Number of variables: 1-8 (with AC)\"\n" >> output.csv;
+echo -e "\n\"Number of variables: 1-8 (with AC)\"\n" >> output.csv;
 for n in {1,2,3,4,5,6,7,8};
 do java Solver -n $n -l 3 -d 0.5 -s 0.5 -b 50 -ac >> output.csv;
 done
