@@ -215,9 +215,80 @@ avere effettuato il revise su tutti i vincoli (trasposti e non),
 l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 
 \section{Ricerca}
-\subsection{Ripristinare i domini}
+
+L'algoritmo Branch\&Bound di ricerca \'e implementato in maniera ricorsiva
+con l'aiuto di un ciclo while interno, che lavora unicamente sul dominio
+corrente rimuovendone il valore scelto ad ogni iterazione.
+Ad ogni nodo raggiunto si calcola la funzione euristica o quella obbiettivo nel caso si tratti
+di una foglia dell'albero di ricorsione; se la funzione obbiettivo d\'a un
+risultato positivo\footnote{Per positivo si intende un valore superiore, poich\'e
+si considera il caso in cui si intende massimizzare il risultato.} 
+rispetto al bound attuale allora l'algoritmo viene
+richiamato al livello successivo, altrimenti si passa al valore successivo
+della variabile corrente o eventualmente a quella precedente.
+Nel caso si stia analizzando una foglia dell'albero, e quindi a tutte
+le variabili sia stato assegnato un valore, se la funzione obbiettivo fornisce
+un valore superiore al bound corrente e se la soluzione considerata rispetta
+tutti i vincoli allora questa viene salvata come soluzione, e il suo valore viene
+memorizzato come nuovo bound.\\
+La funzione prevede ovviamente anche l'utilizzo della funzione \textit{ac1()}, controllando
+un'apposita variabile per sapere se si deve eseguire la propagazione oppure no.
+Le funzioni d'appoggio per l'algoritmo son le seguenti:
+
+\begin{itemize}
+ \item getBound() e setBound(): per ottenere il valore del bound attuale e per impostarne uno nuovo;
+ \item doPropagation(): controlla se \'e richiesta o meno l'AC;
+ \item validSol(): controlla se la soluzione raggiunta soddisfa i vincoli e rappresenta quindi
+una soluzione valida; 
+ \item setSol(): imposta la soluzione corrente come quella migliore raggiunta fin'ora.
+\end{itemize}
+
 \subsection{Scelta della variabile}
+
+La scelta della variabile avviene linearmente secondo l'ordine
+stabilito nell'array che le contiene, quindi in ordine crescente. 
+L'indice di posizione nell'array indica il livello dell'albero in cui viene
+rappresentata tale
+variabile; il livello viene passato come parametro ad ogni chiamata della
+funzione principale \textit{bb()}.
+
 \subsection{Scelta del valore}
+
+I valori vengono scelti in ordine crescente cos\'i come sono memorizzati
+nella variabile che rappresenta il dominio. Nell'operare una scelta di valore
+si riduce il dominio di una variabile a quell'unico valore, in modo da
+permettere
+alle funzioni euristiche e obbiettivo di agire costantemente sui domini.
+Nel caso della funzione obbiettivo questa si trover\'a quindi ad analizzare
+dei domini singleton, ovvero domini contenenti un solo valore.
+
+\subsection{Ripristinare i domini}
+
+Poich\'e la scelta del valore avviene modificando i domini delle variabili
+\'e necessario provvedere al ripristino di questi per permettere il corretto
+avanzamento dell'algoritmo.
+Il dominio della variabile corrente viene copiato all'inizio della ricorsione
+mentre la copia di tutti i domini viene effettuata all'entrata nel ciclo while,
+tramite il metodo \textit{copy()}.
+Alla fine di ogni iterazione viene ripristinato il dominio della variabile
+corrente e quelli delle variabili successivi con il metodo
+\textit{setDomain()}, 
+in modo da permettere alle sucessive iterazioni/ricorsioni di agire sui domini
+completi.
+
+\section{Utilizzo da riga di comando}
+
+Il risolutore prevede il passaggio dei parametri da riga di comando secondo
+le seguenti regole:
+
+\begin{itemize}
+ \item -n: (int) imposta il numero di variabili rappresentate dal problema;
+ \item -l: (int) imposta la caridnait\'a dei domini delle varibili;
+ \item -d: (float) imposta la densit\'a dei vincoli;
+ \item -s: (float) imposta la strettezza dei vincoli;
+ \item -ac: indica l'utilizzo dell'algoritmo AC-1.
+\end{itemize}
+
 
 \section{Test}
 

@@ -677,8 +677,15 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 	}
 }
 
+
+
 public class Solver {
 
+    public static String printFloat(Float f) {
+        int dec = (int) (f * 10);
+        return f.intValue() + "," + dec;
+    }
+    
     public static void main(String args[]) {
         int n = 3, l = 3;
         float d = 0.5f, s = 0.5f;
@@ -689,7 +696,6 @@ public class Solver {
         String minionFileName = null;
         
         // command line parser - rudimental [solo per provare]
-        // TODO: error handling
         for (int i=0; i<args.length; i++) {
         	if (args[i].equals("-m")) {
         		printMinion = true;
@@ -719,9 +725,14 @@ public class Solver {
             }
             else if(args[i].equals("-ac")) {
                 ac = true;
-            }
-            else {
+            } else {
                 System.out.println("Error: unknown parameter.");
+                System.out.println("Options:\t-n\t(int) number of variables");
+                System.out.println("\t\t-l\t(int) cardinality of domains");
+                System.out.println("\t\t-d\t(float) density of constraints");
+                System.out.println("\t\t-s\t(float) strictness of constraints");
+                System.out.println("\t\t-ac\tdo propagation");
+                System.exit(1);
             }
         }
 
@@ -748,5 +759,30 @@ public class Solver {
         	p.bb(0);
            	p.printSol();
         }
+
+        /*
+        long start, time = 0;
+        int nodes = 0;
+
+        for (int i = 0; i < 50; i++) {
+            start = System.nanoTime();
+
+            Problem p = new RandomProblem(n, l, d, s,
+                new MaxSum(), new MaxSum(), ac);
+            //System.out.println(p);
+            p.bb(0);
+            //p.printSol();
+            time += (System.nanoTime()-start);
+            nodes += p.getVisitedNodes();
+        }
+
+        System.out.print(";\"Num\";" + n);
+        System.out.print(";\"Len\";" + l);
+        System.out.print(";\"Den\";" + printFloat(d));
+        System.out.print(";\"Str\";" + printFloat(s));
+        System.out.print(";\"Prop\";" + ac);
+        System.out.print(";\"Avg visited\";" + nodes / 50);
+        System.out.println(";\"Avg time\";" + time / 50);
+        */
     }
 }
