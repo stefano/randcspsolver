@@ -632,10 +632,14 @@ class Benchmark {
 		
 		double avg = (total_time - (max + min)) / (nrun - 2.0);
 		float avgNodes = (visitedNodes - (maxNodes + minNodes)) / (nrun - 2.0f);
-		System.out.println("Average/Max/Min running time: " +
-				avg + "/" + max + "/" + min);
-		System.out.println("Average/Max/Min visited nodes: " +
-				avgNodes + "/" + maxNodes + "/" + minNodes);
+
+        System.out.print(";\"Max visited\";" + maxNodes);
+        System.out.print(";\"Min visited\";" + minNodes);
+        System.out.print(";\"Avg visited\";" + String.format("%f", avgNodes));
+        System.out.print(";\"Max time\";" + max);
+        System.out.print(";\"Min time\";" + min);        
+        System.out.print(";\"Avg time\";" + String.format("%f", avg));
+        System.out.println();
 	}
 }
 
@@ -672,6 +676,14 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 		return p;
 	}
 
+	public void printParameters() {
+        System.out.print(";\"Num\";" + n);
+        System.out.print(";\"Len\";" + l);
+        System.out.print(";\"Den\";" + String.format("%f", d));
+        System.out.print(";\"Str\";" + String.format("%f", s));
+        System.out.print(";\"Prop\";" + ac);
+	}
+	
 	public void printStats() {
 		System.out.println("Problems with solution: " + solutions);
 	}
@@ -681,11 +693,6 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 
 public class Solver {
 
-    public static String printFloat(Float f) {
-        int dec = (int) (f * 10);
-        return f.intValue() + "," + dec;
-    }
-    
     public static void main(String args[]) {
         int n = 3, l = 3;
         float d = 0.5f, s = 0.5f;
@@ -739,8 +746,8 @@ public class Solver {
         if (benchmark) {
         	RandomProblemBenchmark rpb = new RandomProblemBenchmark(n, l, d, s, ac);
         	Benchmark b = new Benchmark(rpb, nrun);
+        	rpb.printParameters();
         	b.runAll();
-        	rpb.printStats();
         } else {
         	Problem p = new RandomProblem(n, l, d, s, new MaxSum(), 
         			new MaxSum(), ac);
@@ -759,30 +766,5 @@ public class Solver {
         	p.bb(0);
            	p.printSol();
         }
-
-        /*
-        long start, time = 0;
-        int nodes = 0;
-
-        for (int i = 0; i < 50; i++) {
-            start = System.nanoTime();
-
-            Problem p = new RandomProblem(n, l, d, s,
-                new MaxSum(), new MaxSum(), ac);
-            //System.out.println(p);
-            p.bb(0);
-            //p.printSol();
-            time += (System.nanoTime()-start);
-            nodes += p.getVisitedNodes();
-        }
-
-        System.out.print(";\"Num\";" + n);
-        System.out.print(";\"Len\";" + l);
-        System.out.print(";\"Den\";" + printFloat(d));
-        System.out.print(";\"Str\";" + printFloat(s));
-        System.out.print(";\"Prop\";" + ac);
-        System.out.print(";\"Avg visited\";" + nodes / 50);
-        System.out.println(";\"Avg time\";" + time / 50);
-        */
     }
 }
