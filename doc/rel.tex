@@ -12,7 +12,7 @@
 \fancyhead{} %annulla head di default
 \fancyfoot{} %annulla foot di default
 
-\newcommand{\titolo}{Ottimizzazione di CSP con Branch and Bound}
+\newcommand{\titolo}{Ottimizzazione di CSP random con Branch and Bound}
 \newcommand{\autore}{Dissegna Stefano, Geremia Mirco}
 
 %testa e piede
@@ -71,6 +71,70 @@ un risolutore che non utilizza nessun tipo di propagazione ed uno che
 invece mantiene il problema consistente localmente. Il criterio
 utilizzato per la consistenza locale \`e la consistenza sugli archi
 (AC).
+
+\section{Utilizzo da riga di comando}
+
+Per eseguire il programma si utilizza il seguente comando (il file
+\textit{Solver.class} deve trovarsi in una directory presente nella
+variabile d'ambiente \textit{CLASSPATH}):
+\begin{verbatim}
+  java Solver [opzioni]
+\end{verbatim}
+
+Il risolutore prevede il passaggio dei parametri da riga di comando secondo
+le seguenti regole:
+
+\begin{itemize}
+ \item -n N: (N \'e un intero) imposta il numero di variabili rappresentate dal problema;
+ \item -l L: (L \'e un intero) imposta la cardinalit\`a dei domini delle varibili;
+ \item -d D: (D \'e un reale tra 0 e 1) imposta la densit\`a dei vincoli;
+ \item -s S: (S \'e un reale tra 0 e 1) imposta la strettezza dei vincoli;
+ \item -ac: se presente, utilizza l'algoritmo AC-1 durante la ricerca.
+ \item -b B: (B \'e un intero) se presente esegue il risolutore in
+   modalit\`a benchmark. Risolve B problemi generati casualmente e
+   stampa in output, in formato CSV, il tempo ed il numero di nodi
+   visitati massimi, minimi e medi. In questa modalit\`a l'opzione -m
+   viene ignorata. Se non presente, viene generato un solo problema, e
+   viene stampato in output il problema ed una sua soluzione ottima.
+ \item -m \textit{nomefile.minion}: scrive nel file specificato uno
+   script \textit{Minion} che risolve il problema generato casualmente.
+\end{itemize}
+
+\subsection{Esempi}
+
+Il seguente esempio genera 100 problemi, ognuno con 10 variabili,
+domini di cardinalit\`a 12, con una probabilit\`a 0.7 che un vincolo
+tra due variabili sia presente ed una probabilit\`a 0.6 che una coppia
+di valori sia accettata da un vincolo. Durante la ricerca della
+soluzione ottima utilizza AC come criterio di consistenza locale:
+
+\begin{verbatim}
+  java Solver -n 10 -l 12 -d 0.7 -s 0.6 -ac -b 100
+\end{verbatim}
+
+Il seguente esempio \`e uguale al precedente, ma genera un solo
+problema, lo stampa insieme alla soluzione ottima e genera uno script
+equivalente per il risolutore \textit{Minion}:
+
+\begin{verbatim}
+  java Solver -n 10 -l 12 -d 0.7 -s 0.6 -ac -m problem.minion
+\end{verbatim}
+
+Terminata l'esecuzione \'e possibile risolvere lo stesso problema con
+\textit{Minion}:
+
+\begin{verbatim}
+  minion problem.minion
+\end{verbatim}
+
+\subsection{Compilazione}
+
+Per compilare il programma da sorgenti \'e sufficiente eseguire il
+seguente comando nella directory principale del progetto:
+
+\begin{verbatim}
+  javac Solver.java
+\end{verbatim}
 
 \section{Rappresentazione dei domini}
 
@@ -216,17 +280,22 @@ l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 
 \section{Ricerca}
 
-L'algoritmo Branch\&Bound di ricerca \'e implementato in maniera ricorsiva
-con l'aiuto di un ciclo while interno, che lavora unicamente sul dominio
-corrente rimuovendone il valore scelto ad ogni iterazione.
+%% TODO: dire che durante la ricerca viengono mantenuti la soluzione
+%% migliore trovata finora e il bound corrente. Dire inoltre quali
+%% sono i valori iniziali e perche' sono stati scelti.
+
+L'algoritmo Branch\&Bound di ricerca \'e implementato in modo ricorsivo
+con l'aiuto di un ciclo while interno, che lavora unicamente sul
+dominio della variabile corrente rimuovendone il valore scelto ad ogni iterazione.
 Ad ogni nodo raggiunto si calcola la funzione euristica o quella obbiettivo nel caso si tratti
-di una foglia dell'albero di ricorsione; se la funzione obbiettivo d\'a un
-risultato positivo\footnote{Per positivo si intende un valore superiore, poich\'e
+di una foglia dell'albero di ricerca; se la funzione obbiettivo d\`a un
+risultato positivo\footnote{Per positivo si intende un valore
+  superiore al valore della soluzione corrente, poich\'e
 si considera il caso in cui si intende massimizzare il risultato.} 
 rispetto al bound attuale allora l'algoritmo viene
-richiamato al livello successivo, altrimenti si passa al valore successivo
-della variabile corrente o eventualmente a quella precedente.
-Nel caso si stia analizzando una foglia dell'albero, e quindi a tutte
+richiamato al livello successivo, altrimenti si prova il valore successivo
+della variabile corrente o eventualmente si effettua backtracking alla
+variabile precedente. Nel caso si stia analizzando una foglia dell'albero, e quindi a tutte
 le variabili sia stato assegnato un valore, se la funzione obbiettivo fornisce
 un valore superiore al bound corrente e se la soluzione considerata rispetta
 tutti i vincoli allora questa viene salvata come soluzione, e il suo valore viene
@@ -240,7 +309,7 @@ Le funzioni d'appoggio per l'algoritmo son le seguenti:
  \item doPropagation(): controlla se \'e richiesta o meno l'AC;
  \item validSol(): controlla se la soluzione raggiunta soddisfa i vincoli e rappresenta quindi
 una soluzione valida; 
- \item setSol(): imposta la soluzione corrente come quella migliore raggiunta fin'ora.
+ \item setSol(): imposta la soluzione corrente come quella migliore raggiunta finora.
 \end{itemize}
 
 \subsection{Scelta della variabile}
@@ -254,41 +323,27 @@ funzione principale \textit{bb()}.
 
 \subsection{Scelta del valore}
 
-I valori vengono scelti in ordine crescente cos\'i come sono memorizzati
+I valori vengono scelti in ordine decrescente cos\`i come sono memorizzati
 nella variabile che rappresenta il dominio. Nell'operare una scelta di valore
 si riduce il dominio di una variabile a quell'unico valore, in modo da
 permettere
 alle funzioni euristiche e obbiettivo di agire costantemente sui domini.
-Nel caso della funzione obbiettivo questa si trover\'a quindi ad analizzare
+Nel caso della funzione obbiettivo questa si trover\`a quindi ad analizzare
 dei domini singleton, ovvero domini contenenti un solo valore.
 
 \subsection{Ripristinare i domini}
 
-Poich\'e la scelta del valore avviene modificando i domini delle variabili
-\'e necessario provvedere al ripristino di questi per permettere il corretto
-avanzamento dell'algoritmo.
-Il dominio della variabile corrente viene copiato all'inizio della ricorsione
-mentre la copia di tutti i domini viene effettuata all'entrata nel ciclo while,
-tramite il metodo \textit{copy()}.
-Alla fine di ogni iterazione viene ripristinato il dominio della variabile
-corrente e quelli delle variabili successivi con il metodo
-\textit{setDomain()}, 
-in modo da permettere alle sucessive iterazioni/ricorsioni di agire sui domini
-completi.
-
-\section{Utilizzo da riga di comando}
-
-Il risolutore prevede il passaggio dei parametri da riga di comando secondo
-le seguenti regole:
-
-\begin{itemize}
- \item -n: (int) imposta il numero di variabili rappresentate dal problema;
- \item -l: (int) imposta la caridnait\'a dei domini delle varibili;
- \item -d: (float) imposta la densit\'a dei vincoli;
- \item -s: (float) imposta la strettezza dei vincoli;
- \item -ac: indica l'utilizzo dell'algoritmo AC-1.
-\end{itemize}
-
+Poich\'e la scelta del valore (oltre all'eventuale propagazione dei
+vincoli) avviene modificando distruttivamente i domini delle variabili
+\'e necessario, durante il backtracking, provvedere al ripristino di
+questi per permettere il corretto avanzamento dell'algoritmo.  Il
+dominio della variabile corrente viene copiato all'inizio della
+ricorsione mentre la copia di tutti i domini viene effettuata
+all'entrata nel ciclo while, tramite il metodo \textit{copy()}.  Alla
+fine di ogni iterazione viene ripristinato il dominio della variabile
+corrente e quelli delle altre variabili con il metodo
+\textit{setDomain()}, in modo da permettere alle sucessive
+iterazioni/ricorsioni di agire sui domini corretti.
 
 \section{Test}
 
