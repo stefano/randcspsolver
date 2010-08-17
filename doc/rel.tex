@@ -280,15 +280,20 @@ l'algoritmo si ferma in quanto il problema \`e diventato \textit{AC}.
 
 \section{Ricerca}
 
-%% TODO: dire che durante la ricerca viengono mantenuti la soluzione
-%% migliore trovata finora e il bound corrente. Dire inoltre quali
-%% sono i valori iniziali e perche' sono stati scelti.
-
 L'algoritmo Branch\&Bound di ricerca \'e implementato in modo ricorsivo
 con l'aiuto di un ciclo while interno, che lavora unicamente sul
 dominio della variabile corrente rimuovendone il valore scelto ad ogni iterazione.
-Ad ogni nodo raggiunto si calcola la funzione euristica o quella obbiettivo nel caso si tratti
-di una foglia dell'albero di ricerca; se la funzione obbiettivo d\`a un
+La ricerca mantiene la migliore soluzione incontrata fino al passo corrente,
+memorizzando i valori scelti per ogni variabile nell'ordine in cui quest'ultime sono analizzate;
+alla fine della ricerca si controlla se la variabile che dovrebbe contenere la soluzione
+\`e rimasta vuota e in tal caso si avverte l'utente che non esistono soluzioni per il problema dato.
+Si tiene inoltre memoria del bound attuale per poterlo confrontare con le
+soluzioni raggiunte nel corso dell'algoritmo e poter determinare l'utilit\`a o meno
+di intraprendere alcuni cammini. Considerando il problema di massimizzare il risultato,
+il bound viene inizialmente impostato al minimo valore che pu\`o avere un intero, ovvero -2$^{31}$, in modo
+da far risultare la prima soluzione valida migliore del bound iniziale.\\
+Ad ogni nodo raggiunto infatti si calcola la funzione euristica o quella obbiettivo nel caso si tratti
+di una foglia dell'albero di ricerca; se la funzione euristica d\`a un
 risultato positivo\footnote{Per positivo si intende un valore
   superiore al valore della soluzione corrente, poich\'e
 si considera il caso in cui si intende massimizzare il risultato.} 
