@@ -369,8 +369,145 @@ usare il comando:
 \end{verbatim}
 
 \section{Benchmark}
+I benchmark sono stati effettuati facendo variare i parametri di densit\`a e strettezza
+dei vincoli, stampando per ognuno i valori medi di nodi visitati e tempo
+impiegato per eseguire l'algoritmo. Non \`e stato possibile confrontare i risultati
+ottenuti con e senza AC in un unico grafico poich\`e i valori ottenuti erano troppo
+diversi e questo rendeva l'immagine di scarsa utilit\`a; si \`e deciso quindi di costruire 
+per ogni misurazione un grafico del rapporto tra i due algoritmi, per verificare il notevole 
+incremento di prestazione ottenuto tramite la propagazione.
 
-\subsection{Al variare di ...}
-%% grafico + commento testuale
+\subsection{Densit\`a - Nodi visitati}
+In questa sezione si varia il parametro relativo alla densit\`a mettendolo
+in comparazione con i nodi visitati; il comando dato per ottenere i grafici sottostanti
+\`e il seguente:
+\begin{verbatim}
+  $ java Solver -n 7 -l 10 -d $d -s 0.5 [-ac]
+\end{verbatim}
+dove il parametro \textit{\$d} assume i valori compresi tra 0.05 e 1 ad intervalli di 0.05,
+e \textit{-ac} viene utilizzato nel secondo grafico per aggiungere l'AC.
+
+\subsubsection{Senza AC}
+\includegraphics[scale=0.6]{dens.png}
+\\
+Come si pu\`o facilmente notare per valori bassi di densit\`a, e quindi con pochi vincoli, l'algoritmo trova
+subito la soluzione migliore poich\`e sceglie inizialmente i valori pi\`u grandi per ogni dominio, e
+il resto dell'albero viene saltato dato che i valori forniti dalle funzioni euristiche non sono
+superiori a quelli della soluzione trovata; quando invece il nuemro dei vincoli comincia ad
+aumentare l'algoritmo \`e costretto a continuare la ricerca fino a visitare circa 7 milioni di nodi dei
+circa 100 milioni totali dell'albero quando la densit\`a \`e massima.
+
+\subsubsection{Con AC}
+\includegraphics[scale=0.8]{densAC.png}
+\\
+Il grafico relativo al Branch\&Bound con l'aiuto dell'AC evidenzia un picco di quasi 140 nodi visitati
+in corrispondenza del valore di densit\`a 0.35; \`e logico pensare che un numero grande di vincoli 
+porti ad escludere una parte maggiore dell'albero tramite la propagazione, e infatti si arriva ad un minimo di circa 
+30 nodi visitati quando la densit\`a \`e impostata a 1.
+
+
+\subsubsection{Rapporto (senza AC) / AC}
+\includegraphics[scale=0.8]{densNodesQuotient.png}
+\\
+Il rapporto tra numero di nodi visitati con la ricerca normale rispetto a quello con AC ci illustra
+come l'ordine di grandezza per i due algoritmi sia considerevolmente diverso: quando la densit\`a dei vincoli
+\`e massima infatti il Branch\&Bound senza AC visita pi\`u di 200000 volte i nodi visitati dalla ricerca con AC.
+
+\subsection{Densit\`a - Tempo impiegato}
+Anche in questa sezione il parametro variato \`e quello della densit\`a, conforntandolo per\`o
+con il tempo impiegato dall'algortimo ad esaurire la ricerca; il comando dato per ottenere i grafici seguenti
+\`e dunque lo stesso della precedente sezione, ovvero:
+\begin{verbatim}
+  $ java Solver -n 7 -l 10 -d $d -s 0.5 [-ac]
+\end{verbatim}
+dove il parametro \textit{\$d} assume i valori compresi tra 0.05 e 1.
+
+\subsubsection{Senza AC}
+\includegraphics[scale=0.8]{densTime.png}
+\\
+Questo grafico si comporta in maniera analoga a quello precedente confrontato con i nodi visitati,
+con un tempo massimo impiegato di 9 secondi.
+
+\subsubsection{Con AC}
+\includegraphics[scale=0.8]{densACTime.png}
+\\
+Qui invece si pu\`o notare la differenza con il grafico riguardante i nodi, in particolare
+non si pu\`o parlare di un vero e proprio picco e si pu\`o constatare comunque che il valore
+per cui l'algoritmo richiede pi\`u tempo \`e diverso da quello in cui si denotava la punta massima 
+precedentemente; questo ci fa notare che un numero minore di nodi non necessariamente implica una 
+ricerca pi\`u veloce.
+
+\subsubsection{Rapporto (senza AC) / AC}
+\includegraphics[scale=0.8]{densTimeQuotient.png}
+\\
+Come nel rapporto precedente anche qui emerge l'importante differenza di tempo che impiegano le
+due versioni dell'algoritmo, con quella senza propagazione che diventa pi\`u di 2000 volte pi\`u lenta
+in corrispondenza di valori di densit\`a alti.
+
+\subsection{Strettezza - Nodi visitati}
+In questa sezione si varia il parametro relativo alla strettezza dei vincoli, analizzandolo
+in relazione ai i nodi visitati; il comando dato per ottenere i grafici sottostanti
+\`e il seguente:
+\begin{verbatim}
+  $ java Solver -n 7 -l 10 -d 0.5 -s $s [-ac]
+\end{verbatim}
+dove il parametro \textit{\$s} assume i valori compresi tra 0.05 e 1 ad intervalli di 0.05.
+
+\subsubsection{Senza AC}
+\includegraphics[scale=0.8]{strict.png}
+\\
+Questo grafico pu\`o essere spiegato analizzando gli effetti della strettezza sulla ricerca:
+se in un vincolo sono accettate molte coppie di valori \`e probabile che l'algoritmo trovi
+presto la soluzione migliore dato che parte con la scelta dei valori pi\`u alti; se invece sono accettate
+poche coppie per vincolo l'algoritmo dovr\`a prloungare la ricerca per trovare una soluzione
+che includa le coppie di valori pi\`u alte, rendendo l'euristica meno utile al taglio di alcuni rami
+dell'albero. Ecco perch\`e con valori pi\`u bassi di strettezza si arriva a visitare anche pi\`u di 10 milioni 
+di nodi.
+
+\subsubsection{Con AC}
+\includegraphics[scale=0.8]{strictAC.png}
+\\
+A differenza del Branch\&Bound normale in questa situazione si nota come l'AC sia
+agevolata da una strettezza pi\`u forte (ovvero con valori pi\`u bassi) poich\`e consente
+una propagazione pi\`u profonda eliminando molti rami dell'albero di ricerca. Nel grafico si
+nota inoltre il picco di nodi visitati in corrispondenza di valori medi di strettezza.
+
+\subsubsection{Rapporto (senza AC) / AC}
+\includegraphics[scale=0.8]{strictNodesQuotient.png}
+\\
+L'andamento del rapporto sopra illustrato \`e molto simile a quello del primo grafico, a testimonianza
+dello scarso impatto dei valori dell'algoritmo con AC nel rapporto tra i due, considerando l'ordine di grandezza
+notevolmente maggiore dei nodi visitati dal Branch\&Bound normale.
+
+\subsection{Strettezza - Tempo impiegato}
+Anche in questa sezione si varia il parametro relativo alla strettezza dei vincoli, confrontandolo
+ora con il tempo impiegato; il comando dato per ottenere i grafici sottostanti
+\`e dunque uguale al precedente:
+\begin{verbatim}
+  $ java Solver -n 7 -l 10 -d 0.5 -s $s [-ac]
+\end{verbatim}
+dove il parametro \textit{\$s} assume i valori compresi tra 0.05 e 1 ad intervalli di 0.05.
+
+\subsubsection{Senza AC}
+\includegraphics[scale=0.8]{strictTime.png}
+\\
+Il risultato rispecchia perfettamente quello del corrispettivo grafico dei nodi visitati e
+valgono perci\`o le stesse considerazioni.
+
+\subsubsection{Con AC}
+\includegraphics[scale=0.8]{strictACTime.png}
+\\
+Anche in questo caso, come nel rispettivo precedente, si pu\`o notare che valori bassi
+di strettezza sono congeniali a questo tipo di algoritmo; questa volta per\`o non si assiste ad
+un picco nella zona centrale, bens\`i ad una stabilizzazione dei risultati medi attorno ai 4ms fino
+al valore massimo di strettezza.
+
+\subsubsection{Rapporto (senza AC) / AC}
+\includegraphics[scale=0.8]{strictTimeQuotient.png}
+\\
+Essendo i valori complessivi pi\`u bassi in questa situazione rispetto a quella dove si analizzavano
+i nodi visitati, si verifica un lieve discostamento tra il grafico del Branch\&Bound senza AC e questo del rapporto; tuttavia
+si pu\`o notare anche in questo caso come per valori bassi di strettezza l'algoritmo con AC sia notevolmente pi\`u
+veloce, fino a 12000 volte la versione senza propagazione.
 
 \end{document}
