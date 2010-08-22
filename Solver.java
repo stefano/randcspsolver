@@ -1,3 +1,11 @@
+/*
+ * Random binary CSP optimization problem generator & solver
+ * 
+ * Authors:
+ *  - Dissegna Stefano
+ *  - Geremia Mirco
+ */
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -14,19 +22,23 @@ class ListDomain {
         elems = l;
     }
 
-    // create a singleton domain
-    // i.e. a domain with just one value
+    /*
+     *  create a singleton domain
+     */
     public ListDomain(int val) {
         elems = new ArrayList<Integer>();
         elems.add(val);
     }
 
+    /*
+     *  @return list of elements in the domain
+     */
     public List<Integer> getElems() {
         return elems;
     }
 
     /*
-     * Return the minimal value of the domain
+     * @return the min value of the domain
      */
     public int getMin() {
         int min = Integer.MAX_VALUE;
@@ -39,7 +51,7 @@ class ListDomain {
     }
 
     /*
-     * Return the minimal value of the domain
+     * @return the max value of the domain
      */
     public int getMax() {
         int max = Integer.MIN_VALUE;
@@ -142,10 +154,17 @@ class Variable {
     }
 
 	public void toMinion(StringBuffer sb) {
+		// output as a discrete variable
+		// values ranges from minimum to maximum
+		// domain values (conservative)
 		sb.append("DISCRETE " + getName() + " {" + 
 				domain.getMin() + ".." + domain.getMax() + "}\n");
 	}
-	
+
+	/*
+	 * Make a string representation of a list of variables
+	 * suitable for minion
+	 */
 	static public String minionVarList(List<Variable> vars) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("[");
@@ -163,6 +182,9 @@ class Variable {
 	
 }
 
+/*
+ * A pair of integers
+ */
 class Pair {
 
     public Pair(int x1, int y1) {
@@ -236,18 +258,32 @@ class BinaryConstraint {
         pairs.add(p);
     }
 
+    /*
+     * Make a new binary constraint
+     * which is a transposed version
+     * of this one
+     */
     public BinaryConstraint transpose() {
         BinaryConstraint bc = new BinaryConstraint(b, a);
         for (Pair p : pairs) {
+        	// add each pair reversed
             bc.add(new Pair(p.y, p.x));
         }
         return bc;
     }
 
+    /*
+     * Tell if the pair (x, y) satisfies this constraint
+     */
     public boolean satisfied(int x, int y) {
         return pairs.contains(new Pair(x, y));
     }
 
+    /*
+     * Remove from the domain of the first variable
+     * values that don't have a support in the domain
+     * of the second variable
+     */
     public boolean revise() {
         return a.getDomain().removeInconsistent(b.getDomain(), this);
     }
@@ -256,6 +292,9 @@ class BinaryConstraint {
         return "#<constraint(" + a.getName() + "," + b.getName() + "):" + pairs.toString() + ">";
     }
 
+    /*
+     * @return name of a minion table associated with this constraint
+     */
     private String minionTable() {
     	return a.getName() + "_" + b.getName();
     }
@@ -288,13 +327,13 @@ class Problem {
     
     private List<Variable> vars;
     private List<BinaryConstraint> constraints;
-    private List<BinaryConstraint> constraints_t;
+    private List<BinaryConstraint> constraints_t; // transposed constraints
     private Evaluator heuristic;
     private Evaluator objectiveFunction;
     private List<Integer> sol;
     private int bound;
     private boolean propagation;
-    private int visitedNodes;
+    private int visitedNodes; // track number of nodes visited by bb()
 
     public Problem(Evaluator h, Evaluator of, boolean prop) {
         heuristic = h;
@@ -345,6 +384,9 @@ class Problem {
         return this.propagation;
     }
 
+    /*
+     * The AC-1 propagation algorithm
+     */
     public void ac1() {
         boolean changed = true;
         while (changed) {
@@ -367,7 +409,11 @@ class Problem {
     public boolean validSol() {
         int elem1, elem2;
 
+        // for each constraint, check if it is satisfied
         for (BinaryConstraint bc : constraints) {
+        	// variables are assumed to be assigned
+        	// getMax() will return the only element
+        	// in their domain
             elem1 = bc.getA().getDomain().getMax();
             elem2 = bc.getB().getDomain().getMax();
             if (bc.satisfied(elem1, elem2) == false) {
@@ -426,11 +472,12 @@ class Problem {
             }
             ListDomain sing_dom = new ListDomain(dom_tmp.getMax());
             cv.setDomain(sing_dom);
-            visitedNodes++;
+            visitedNodes++; // node visited
             
             if (doPropagation()) {
                 ac1();
             }
+            // check if the propagation returned a failed CSP
             if (!doPropagation() || notFailed()) {
             	if ((lev + 1) < vars.size()) { // if it's not the last level
             		int h = evalHeuristic(); // heuristic on actual configuration of domains
@@ -491,6 +538,7 @@ class Problem {
     	sb.append("MAXIMISING " + objectiveFunction.minionName() + "\n");
     	sb.append("PRINT [");
 
+    	// variables output order
     	String varList = Variable.minionVarList(vars);
     	sb.append(varList);
     	sb.append("]\n");
@@ -522,25 +570,28 @@ class RandomProblem extends Problem {
     public RandomProblem(int nvars, int length, float density,
             float strictness, Evaluator h, Evaluator of, boolean prop) {
         super(h, of, prop);
+        // create base domain that will be copied
         List<Integer> values = new ArrayList<Integer>();
         for (int i = 0; i < length; ++i) {
             values.add(i);
         }
         ListDomain dom = new ListDomain(values);
         List<Variable> vars = new ArrayList<Variable>();
+        // create variables
         for (int i = 0; i < nvars; ++i) {
             vars.add(new Variable("V" + i, dom.copy()));
         }
         setVariables(vars);
         for (int i = 0; i < vars.size(); ++i) {
             for (int j = i + 1; j < vars.size(); ++j) {
+            	// accept constraint with "density" probability
                 if (r.nextFloat() <= density) {
                     // create constraint between v1 and v2
                     BinaryConstraint bc = new BinaryConstraint(vars.get(i), vars.get(j));
                     for (int a : dom.getElems()) {
                         for (int b : dom.getElems()) {
+                        	// accept pair with "strictness" probability
                             if (r.nextFloat() <= strictness) {
-                                // accept pair
                                 bc.add(new Pair(a, b));
                             }
                         }
@@ -583,12 +634,19 @@ class MaxSum implements Problem.Evaluator {
 	@Override
 	public void toMinion(StringBuffer sb, List<Variable> vars) {
 		String varList = Variable.minionVarList(vars);
+		// couldn't find a sumeq() function
     	sb.append("sumleq(" + varList + "," + minionName() + ")\n");
     	sb.append("sumgeq(" + varList + "," + minionName() + ")\n");
 	}
 	
+	/*
+	 * Output to sb the declaration of the variable that will be maximized
+	 */
 	@Override
 	public void toMinionVariable(StringBuffer sb, List<Variable> vars) {
+		// use eval() for upper bound of variable domain
+		// can't use Integer.MAX_VALUE since it would make
+		// minion crash
 		sb.append("DISCRETE SUM {0.." + eval(vars) + "}\n");		
 	}
 }
@@ -630,9 +688,11 @@ class Benchmark {
 			visitedNodes += nodes;
 		}
 		
+		// remove max & min value from the averages
 		double avg = (total_time - (max + min)) / (nrun - 2.0);
 		float avgNodes = (visitedNodes - (maxNodes + minNodes)) / (nrun - 2.0f);
 
+		// output stats in CSV format
         System.out.print(";\"Max visited\";" + maxNodes);
         System.out.print(";\"Min visited\";" + minNodes);
         System.out.print(";\"Avg visited\";" + String.format("%f", avgNodes));
@@ -676,6 +736,9 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
 		return p;
 	}
 
+	/*
+	 * Print benchmark parameters (the random problems class)
+	 */
 	public void printParameters() {
         System.out.print(";\"Num\";" + n);
         System.out.print(";\"Len\";" + l);
@@ -683,14 +746,16 @@ class RandomProblemBenchmark implements Benchmark.SingleRun {
         System.out.print(";\"Str\";" + String.format("%f", s));
         System.out.print(";\"Prop\";" + ac);
 	}
-	
+
+	// never used, print number of generated problem with a solution
 	public void printStats() {
 		System.out.println("Problems with solution: " + solutions);
 	}
 }
 
-
-
+/*
+ * Main class
+ */
 public class Solver {
 
     public static void main(String args[]) {
@@ -702,7 +767,7 @@ public class Solver {
         boolean printMinion = false;
         String minionFileName = null;
         
-        // command line parser - rudimental [solo per provare]
+        // command line parser - rudimental (no error checking)
         for (int i=0; i<args.length; i++) {
         	if (args[i].equals("-m")) {
         		printMinion = true;
@@ -744,11 +809,13 @@ public class Solver {
         }
 
         if (benchmark) {
+        	// benchmark mode
         	RandomProblemBenchmark rpb = new RandomProblemBenchmark(n, l, d, s, ac);
         	Benchmark b = new Benchmark(rpb, nrun);
         	rpb.printParameters();
         	b.runAll();
         } else {
+        	// generate a problem and solve it
         	Problem p = new RandomProblem(n, l, d, s, new MaxSum(), 
         			new MaxSum(), ac);
         	if (printMinion) {
@@ -762,9 +829,9 @@ public class Solver {
         			System.err.println("Error while creating file " + minionFileName);
         		}
         	}
-        	System.out.println(p);
-        	p.bb(0);
-           	p.printSol();
+        	System.out.println(p); // print generated problem
+        	p.bb(0); // solve it
+           	p.printSol(); // print its solution
         }
     }
 }
